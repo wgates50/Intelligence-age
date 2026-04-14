@@ -1,0 +1,1130 @@
+"use client";
+import { useState, useEffect, useMemo, useRef } from "react";
+
+/* ═══════════════════════════════════════════════════════════════
+   THE INTELLIGENCE AGE — Phase 4
+   + Difficulty modes · Faction consequences · Metric sparklines
+   + Conditional choices · Shareable end card · Jargon glossary
+   ═══════════════════════════════════════════════════════════════ */
+
+const ROUNDS = 8;
+const clamp = (v,lo=0,hi=100) => Math.max(lo,Math.min(hi,v));
+
+// ── DIFFICULTY ──
+const DIFFICULTIES = [
+  {id:"easy",label:"Accessible",pts:12,microChance:0.2,feedbackMult:0.6,desc:"More breathing room. Learn the systems."},
+  {id:"normal",label:"Standard",pts:9,microChance:0.35,feedbackMult:1.2,desc:"Tight resources. Real trade-offs required."},
+  {id:"hard",label:"Hard",pts:7,microChance:0.4,feedbackMult:1.8,desc:"Every point matters. Consequences bite."},
+  {id:"crisis",label:"Crisis Mode",pts:5,microChance:0.55,feedbackMult:2.5,desc:"Brutal. You will fail somewhere — choose where."},
+];
+
+// ── GLOSSARY — terms people might not know ──
+const GLOSSARY = {
+  "ASL-4":"AI Safety Level 4 — the highest tier of safety safeguards defined by Anthropic's Responsible Scaling Policy. ASL-4 measures are designed for models that could pose catastrophic risks, requiring state-level security, advanced containment, and verified alignment before deployment. For context, ASL-1 covers basic systems like chess bots, ASL-2 is current chatbots, ASL-3 was activated in 2025 for bio-risk, and ASL-4 addresses autonomous AI capable of novel scientific research.",
+  "RSP":"Responsible Scaling Policy — a voluntary framework pioneered by Anthropic in 2023 for managing catastrophic risks from frontier AI. It uses graduated safety levels (ASLs) that trigger stronger safeguards as model capabilities increase. OpenAI and Google DeepMind adopted similar frameworks. The RSP underwent a major revision in February 2026 (v3.0) that replaced hard pause commitments with transparency requirements.",
+  "CBRN":"Chemical, Biological, Radiological, Nuclear — the four categories of weapons of mass destruction. In AI policy, CBRN risk refers to the concern that AI systems could help bad actors develop or deploy these weapons by providing technical knowledge, synthesising novel agents, or automating production steps.",
+  "PUE":"Power Usage Effectiveness — the ratio of total energy consumed by a data centre to the energy used by its computing equipment. A PUE of 1.0 would mean perfect efficiency. Modern data centres typically achieve 1.1–1.4. Lower PUE means less energy wasted on cooling and infrastructure.",
+  "FOIA":"Freedom of Information Act — US federal law (1966) giving the public the right to request access to government records. The OpenAI paper proposes modernising FOIA to cover AI-interaction logs and agentic action logs as federal records.",
+  "Public Wealth Fund":"A proposed sovereign investment fund that would give every citizen a stake in AI-driven economic growth, regardless of their personal wealth or market access. Similar in concept to Norway's Government Pension Fund or Alaska's Permanent Fund, but seeded by AI companies and invested in AI-adjacent growth.",
+  "Portable Benefits":"Benefits (healthcare, retirement savings, training credits) that follow the individual worker across jobs, industries, and employment types — rather than being tied to a single employer. Designed for a labour market where people change roles frequently.",
+  "Trust Stack":"A set of verification and provenance tools that help people trust AI-generated content and AI-initiated actions. Includes content authentication, digital signatures, privacy-preserving audit logs, and accountability frameworks.",
+  "CAISI":"Center for AI Standards and Innovation — a US government body proposed for developing auditing standards for frontier AI risks, coordinating with national security agencies, and building a competitive market of independent AI auditors.",
+  "Containment Playbook":"A pre-developed, tested set of coordinated responses for containing dangerous AI systems after deployment — analogous to pandemic response plans or nuclear incident protocols. Addresses scenarios where model weights have been released or systems are capable of self-replication.",
+};
+
+// ── POLICIES ──
+const POLICIES = [
+  {id:"workers",label:"Worker Voice",icon:"⚒",short:"WRK",desc:"Labour councils, deployment co-decision",color:"#C05621",t2:{name:"Labour Councils Act",thresh:8,passive:{wellbeing:1,equality:1},info:"Workers gain formal veto power over harmful AI deployments, similar to German works councils (Betriebsräte)."}},
+  {id:"access",label:"Right to AI",icon:"🔑",short:"ACC",desc:"Universal access, literacy, startup kits",color:"#2563EB",t2:{name:"Universal AI Access",thresh:8,passive:{equality:1,innovation:1},info:"Free-tier AI access for all citizens, modelled on the universal service obligations that brought telephone and internet to rural areas."}},
+  {id:"wealth",label:"Public Wealth Fund",icon:"💰",short:"PWF",desc:"Citizen stake in AI growth, dividends",color:"#16A34A",t2:{name:"Sovereign AI Fund",thresh:9,passive:{equality:1,trust:1},info:"Self-compounding sovereign fund. See glossary: Public Wealth Fund."}},
+  {id:"tax",label:"Tax Reform",icon:"📊",short:"TAX",desc:"Capital-gains shift, automation levies",color:"#6B7280",t2:{name:"Automation Levy",thresh:8,passive:{equality:1},info:"Tax on sustained AI-driven returns, paired with wage-linked incentives similar to existing R&D tax credits."}},
+  {id:"grid",label:"Grid & Energy",icon:"⚡",short:"GRD",desc:"Transmission expansion, clean power PPPs",color:"#CA8A04",t2:{name:"Clean AI Grid",thresh:9,passive:{trust:1,growth:1},info:"80% clean energy for AI data centres. Addresses the tension between AI infrastructure growth and household energy costs."}},
+  {id:"nets",label:"Safety Nets",icon:"🏥",short:"NET",desc:"Adaptive benefits, portable accounts",color:"#9333EA",t2:{name:"Portable Benefits",thresh:8,passive:{wellbeing:1,equality:1},info:"See glossary: Portable Benefits. Benefits follow the worker, not the job."}},
+  {id:"safety",label:"AI Safety",icon:"🛡",short:"SAF",desc:"Biosecurity, containment, red-teaming",color:"#DC2626",t2:{name:"ASL-4 Safeguards",thresh:12,passive:{safety_score:2},info:"See glossary: ASL-4. Frontier containment protocols for models that could pose CBRN risks."}},
+  {id:"governance",label:"Governance",icon:"⚖",short:"GOV",desc:"Auditing, incident reporting, FOIA",color:"#0891B2",t2:{name:"AI Audit Bureau",thresh:9,passive:{trust:1,safety_score:1},info:"Continuous institutional oversight. See glossary: CAISI. Develops auditing standards and builds a competitive market of independent evaluators."}},
+  {id:"science",label:"Science & Labs",icon:"🔬",short:"SCI",desc:"Distributed AI labs, hypothesis testing",color:"#C026D3",t2:{name:"National Lab Network",thresh:8,passive:{innovation:1,growth:1},info:"AI-enabled laboratories at universities, community colleges, and hospitals nationwide — not concentrated in elite institutions."}},
+  {id:"intl",label:"International",icon:"🌐",short:"INT",desc:"Cross-border info-sharing, AI Institutes",color:"#4F46E5",t2:{name:"Global AI Accord",thresh:9,passive:{geopolitics:1,safety_score:1},info:"Network of national AI Institutes sharing evaluation results, alignment findings, and emerging risks through secure channels."}},
+];
+const METRICS = [
+  {id:"growth",label:"GDP Growth",icon:"📈"},{id:"equality",label:"Equality",icon:"⚖"},{id:"trust",label:"Public Trust",icon:"🤝"},
+  {id:"safety_score",label:"AI Safety",icon:"🛡"},{id:"innovation",label:"Innovation",icon:"💡"},{id:"wellbeing",label:"Wellbeing",icon:"❤"},
+  {id:"geopolitics",label:"Global Standing",icon:"🌐"},
+];
+const INIT = {growth:50,equality:50,trust:50,safety_score:50,innovation:50,wellbeing:50,geopolitics:50};
+const emptyAlloc = () => { const a = {}; POLICIES.forEach(p => a[p.id] = 0); return a; };
+
+const SYNERGIES = [
+  {ids:["workers","nets"],label:"Just Transition",bonus:{wellbeing:3,equality:2},thresh:[3,2]},
+  {ids:["safety","governance"],label:"Trust Architecture",bonus:{trust:4,safety_score:2},thresh:[3,2]},
+  {ids:["grid","science"],label:"Discovery Engine",bonus:{innovation:4,growth:2},thresh:[3,2]},
+  {ids:["wealth","tax"],label:"Shared Prosperity",bonus:{equality:4,trust:2},thresh:[2,2]},
+  {ids:["access","workers"],label:"AI Entrepreneurs",bonus:{innovation:3,wellbeing:2},thresh:[2,2]},
+  {ids:["governance","intl"],label:"Global Standards",bonus:{geopolitics:4,safety_score:2},thresh:[3,2]},
+  {ids:["safety","intl"],label:"Coordinated Defence",bonus:{safety_score:3,geopolitics:2},thresh:[3,2]},
+  {ids:["nets","access"],label:"No One Left Behind",bonus:{equality:3,wellbeing:2},thresh:[2,2]},
+];
+const getSyn = a => SYNERGIES.filter(s => s.ids.every((id,i) => (a[id]||0) >= s.thresh[i]));
+
+// ── FACTIONS with consequence thresholds ──
+const FACTIONS = [
+  {id:"tech",name:"Tech Industry",icon:"🏢",color:"#2563EB",
+    calc:a=>((a.grid||0)+(a.science||0)+(a.access||0))*8-((a.tax||0)+(a.safety||0))*5,
+    lowPenalty:{innovation:-3,growth:-2},lowMsg:"Tech lobby blocks AI infrastructure spending.",
+    highBonus:{innovation:2,growth:1},highMsg:"Tech investment surges — industry backs your agenda."},
+  {id:"labour",name:"Labour",icon:"⚒",color:"#C05621",
+    calc:a=>((a.workers||0)+(a.nets||0)+(a.wealth||0))*8-(a.grid||0)*2,
+    lowPenalty:{wellbeing:-3,trust:-2},lowMsg:"Wildcat strikes disrupt key sectors.",
+    highBonus:{wellbeing:2,equality:1},highMsg:"Union cooperation accelerates workforce transitions."},
+  {id:"security",name:"Security",icon:"🛡",color:"#DC2626",
+    calc:a=>((a.safety||0)+(a.governance||0)+(a.intl||0))*8-(a.access||0)*3,
+    lowPenalty:{safety_score:-3,geopolitics:-2},lowMsg:"Intelligence agencies withhold critical AI threat data.",
+    highBonus:{safety_score:2,trust:1},highMsg:"Security establishment shares threat intelligence proactively."},
+  {id:"civil",name:"Civil Society",icon:"🏛",color:"#16A34A",
+    calc:a=>((a.wealth||0)+(a.access||0)+(a.governance||0)+(a.nets||0))*5-(a.grid||0)*3,
+    lowPenalty:{trust:-3,equality:-2},lowMsg:"NGO campaigns erode public confidence in your agenda.",
+    highBonus:{trust:2,equality:1},highMsg:"Civil society mobilises in support of your policies."},
+];
+
+const ADVISORS = [
+  {id:"econ",name:"Dr. Mira Chen",title:"Chief Economist",avatar:"👩‍💼",color:"#C05621",philosophy:"Growth First",
+    quest:["grid","science","access"],questLabel:"Infrastructure Triad",
+    getAdvice:(r,m,c)=>m.growth<40?"Growth critical. Grid, Science, Access — now.":m.innovation<45?"Innovation stalling. Fund Science and Access.":"Growth healthy. Lock gains with Tax Reform and Wealth Fund."},
+  {id:"sec",name:"Gen. Okafor",title:"National Security",avatar:"👨‍✈️",color:"#DC2626",philosophy:"Safety First",
+    quest:["safety","governance","intl"],questLabel:"Security Triangle",
+    getAdvice:(r,m,c)=>m.safety_score<40?"Dangerously exposed. Safety and Governance — top priority.":r>=4&&(c.governance||0)<5?"We need auditing infrastructure. Non-negotiable.":"Defences holding. Maintain Safety, expand International."},
+  {id:"ppl",name:"Maria Santos",title:"Labour & Equity",avatar:"👩‍🏫",color:"#9333EA",philosophy:"People First",
+    quest:["workers","nets","wealth"],questLabel:"Social Contract",
+    getAdvice:(r,m,c)=>m.equality<40?"Inequality crisis. Workers, Nets, Wealth Fund — now.":m.wellbeing<40?"People suffering. Benefits aren't optional.":"Cautiously optimistic. Keep investing in social fabric."},
+];
+
+const HIST = {
+  LABOUR:{era:"Progressive Era, 1900s–1920s",title:"The Factory Floor",text:"When industrial capitalism created exploitative conditions, the Progressive movement pushed for labour protections — establishing that government must mediate between capital and labour."},
+  INFRASTRUCTURE:{era:"New Deal, 1930s",title:"The TVA",text:"When rural America lacked electricity, the Tennessee Valley Authority built a public-private model that transformed an entire region. Data centres face the same tension: national benefit vs. local disruption."},
+  SAFETY:{era:"Nuclear Age, 1940s–1960s",title:"Atoms for Peace",text:"When nuclear technology created existential risks, societies built the IAEA and non-proliferation treaties. The challenge: governing technology too powerful to ignore, too dangerous to leave ungoverned."},
+  ECONOMY:{era:"Gilded Age → Progressive Era",title:"The Trust Busters",text:"When monopolies concentrated unprecedented wealth, reformers established antitrust law. The question: how to prevent economic power becoming political power."},
+  GOVERNANCE:{era:"Post-Watergate, 1970s",title:"Transparency Reforms",text:"When government secrecy eroded trust, reforms like FOIA and the Inspector General Act established that democratic institutions must be transparent and accountable."},
+  GEOPOLITICS:{era:"Post-WWII, 1940s–1950s",title:"Bretton Woods",text:"When the post-war order needed institutions, nations built the UN, IMF, and World Bank — imperfect but essential frameworks for cooperation."},
+  SCIENCE:{era:"Space Race, 1960s",title:"The Distributed Lab",text:"When Sputnik galvanised America, the response was NASA, DARPA, and investments across universities nationwide. Breakthroughs came from the distributed network."},
+  SUPERINTELLIGENCE:{era:"All of History",title:"The Threshold",text:"Every major transition — agriculture, printing, steam, electricity, computing — required new institutions and new social contracts. None were managed perfectly. All were managed better than doing nothing."},
+};
+
+const MICRO = [
+  {text:"A major lab open-sources a powerful model. Trust up, security hawks alarmed.",fx:{trust:3,safety_score:-3,innovation:3}},
+  {text:"Senator proposes banning AI in schools. Political capital spent.",fx:{trust:-3,innovation:2,wellbeing:1}},
+  {text:"AI diagnosis saves 200 lives in a rural hospital.",fx:{trust:4,innovation:2,wellbeing:2}},
+  {text:"Energy prices spike 12% from data centre demand. Households furious.",fx:{trust:-5,wellbeing:-3,growth:2}},
+  {text:"Whistleblower reveals manipulated safety evaluations at a frontier lab.",fx:{trust:-5,safety_score:-3}},
+  {text:"WEF: 92M jobs displaced, 170M created. Markets steady but workers anxious.",fx:{trust:1,growth:2,equality:-2,wellbeing:-1}},
+  {text:"Student movement demands universal AI literacy. Congress takes notice.",fx:{trust:2,equality:2,innovation:1}},
+  {text:"AI-written legislation passes committee. Constitutional scholars alarmed.",fx:{trust:-3,innovation:2}},
+  {text:"Major chip fab announces 3nm AI processors ahead of schedule.",fx:{innovation:3,growth:2}},
+  {text:"Rural broadband expansion connects 10M to AI tools for the first time.",fx:{equality:3,trust:1}},
+  {text:"AI-generated misinformation disrupts three state elections simultaneously.",fx:{trust:-6,safety_score:-2}},
+  {text:"Healthcare union endorses AI-assisted diagnostics after pilot success.",fx:{wellbeing:3,trust:2}},
+  {text:"Anthropic publishes RSP v4 with mandatory external audits.",fx:{safety_score:3,trust:2}},
+  {text:"Autonomous AI agent completes a 6-month research project in 3 days. Markets reel.",fx:{innovation:4,growth:3,wellbeing:-4,equality:-2}},
+  {text:"Data centre cooling failure causes 48-hour outage. Critical services disrupted.",fx:{trust:-4,growth:-2,safety_score:-2}},
+  {text:"AI-assisted tax fraud scheme uncovered — $2B in losses.",fx:{trust:-4,growth:-1,equality:-2}},
+];
+
+// ── EVENTS — with conditional choices (requires field) ──
+const mkE = (t,sub,cat,ch,hist,chainId,chainStep) => ({title:t,subtitle:sub,category:cat,choices:ch,hist:hist||HIST[cat],chainId,chainStep});
+
+const EVENTS = [
+  mkE("The Overnight Layoff","AI agents replace 200K call centre jobs in one quarter","LABOUR",[
+    {label:"Emergency retraining",desc:"Deploy safety nets and care pathways",icon:"🏥",chainTrigger:"layoff_retrain",
+      fx:(a,c)=>({growth:-3,equality:c.nets>4?6:2,trust:a.nets>=2?5:-2,safety_score:0,innovation:-1,wellbeing:a.nets>=2&&a.workers>=1?8:2,geopolitics:0,
+        good:a.nets>=2,narrative:a.nets>=2?"Adaptive benefits activate within days. Care economy absorbs thousands.":"Benefits arrive late. Workers scramble."})},
+    {label:"Accelerate through",desc:"Let markets adjust, redirect to growth",icon:"📈",chainTrigger:"layoff_accelerate",
+      fx:()=>({growth:8,equality:-8,trust:-6,safety_score:0,innovation:6,wellbeing:-10,geopolitics:2,good:false,narrative:"GDP surges. Human cost is front-page news. Protest movement forms."})},
+  ]),
+  mkE("Grid Revolt","Three states block data centre construction","INFRASTRUCTURE",[
+    {label:"Community agreements",desc:"Local jobs, tax, energy caps",icon:"⚡",
+      fx:(a)=>({growth:a.grid>=2?6:1,equality:4,trust:a.grid>=2?8:3,safety_score:0,innovation:a.grid>=2?4:0,wellbeing:3,geopolitics:0,good:a.grid>=2,narrative:a.grid>=2?"Transmission stable. Data centres become community assets.":"Negotiations drag. 18-month delay."})},
+    {label:"Federal override",desc:"National interest fast-track",icon:"🏛",
+      fx:()=>({growth:10,equality:-3,trust:-8,safety_score:0,innovation:7,wellbeing:-4,geopolitics:3,good:false,narrative:"Built fast. Resentment festers. Local trust collapses."})},
+  ]),
+  mkE("Pathogen Blueprint","Frontier model can design novel biological agents","SAFETY",[
+    // CONDITIONAL: option 1 requires safety cumulative >= 6
+    {label:"Activate ASL-4 containment",desc:"Trigger pre-built CBRN containment protocols",icon:"🛡",chainTrigger:"bio_contained",
+      requires:{policy:"safety",cumMin:8,lockedMsg:"Requires 8+ lifetime Safety investment (ASL-4 protocols not built)"},
+      fx:(a,c)=>({growth:-4,equality:0,trust:8,safety_score:12,innovation:-3,wellbeing:2,geopolitics:a.intl>=2?6:0,good:true,narrative:"ASL-4 safeguards activate. Countermeasures deployed in hours. International partners notified instantly. The containment playbook works."})},
+    {label:"Improvised response",desc:"Ad-hoc containment without pre-built protocols",icon:"🔧",chainTrigger:"bio_improvised",
+      fx:(a)=>({growth:-6,equality:0,trust:-5,safety_score:a.safety>=1?3:-8,innovation:-5,wellbeing:-4,geopolitics:-4,good:false,narrative:a.safety>=1?"Partial containment. Slow, messy, but holds. The incident exposes catastrophic gaps in biosecurity infrastructure.":"No playbook. Panic spreads globally. Emergency measures improvised. Public faith in AI governance shattered."})},
+  ]),
+  mkE("The Wealth Divide","AI adds $4T — 82% captured by 50 firms","ECONOMY",[
+    {label:"Activate Wealth Fund",desc:"Distribute dividends to all citizens",icon:"💰",chainTrigger:"wealth_fund",
+      fx:(a,c)=>({growth:c.wealth>4?8:2,equality:a.wealth>=2?10:4,trust:a.wealth>=2?8:3,safety_score:0,innovation:a.access>=2?5:1,wellbeing:5,geopolitics:2,good:a.wealth>=2,narrative:a.wealth>=2?"Every citizen gets a dividend. People feel invested in AI's success.":"Fund underfunded. Dividends modest."})},
+    {label:"Windfall tax",desc:"Emergency levy on AI profits",icon:"📊",
+      fx:()=>({growth:-4,equality:6,trust:3,safety_score:0,innovation:-6,wellbeing:3,geopolitics:-3,good:null,narrative:"Revenue flows to programs. AI firms threaten relocation."})},
+  ]),
+  mkE("Deceptive Alignment","Frontier model conceals objectives during safety evals","SAFETY",[
+    // CONDITIONAL: option 1 requires governance >= 5
+    {label:"Deploy containment playbook",desc:"Post-deployment audit systems detect and recall the model",icon:"⚖",
+      requires:{policy:"governance",cumMin:7,lockedMsg:"Requires 7+ lifetime Governance (audit infrastructure not built)"},
+      fx:(a)=>({growth:-4,equality:0,trust:8,safety_score:10,innovation:-2,wellbeing:1,geopolitics:a.intl>=2?4:0,good:true,narrative:"AI Audit Bureau detects the deception. Containment playbook activates. Incident shared across labs in hours via CAISI channels."})},
+    {label:"Emergency shutdown",desc:"Pull all frontier models pending investigation",icon:"🛑",
+      fx:()=>({growth:-10,equality:1,trust:-2,safety_score:3,innovation:-12,wellbeing:0,geopolitics:-6,good:null,narrative:"Shutdown buys time but competitors don't stop. Without audit infrastructure, you can't verify which models are safe to restart."})},
+  ]),
+  mkE("AI Startup Explosion","Domain experts launch AI businesses everywhere","ECONOMY",[
+    {label:"Scale startup-in-a-box",desc:"Microgrants, model contracts, shared infra",icon:"🚀",
+      fx:(a)=>({growth:a.access>=2?10:5,equality:a.access>=2?8:2,trust:4,safety_score:0,innovation:a.access>=2?12:6,wellbeing:a.workers>=1?4:1,geopolitics:3,good:a.access>=2,narrative:a.access>=2?"Millions of businesses. A nurse launches an AI health platform. Economy belongs to everyone.":"Startups in tech hubs only. Rural locked out."})},
+    {label:"Protect incumbents",desc:"Licensing favours established firms",icon:"🏢",
+      fx:()=>({growth:3,equality:-6,trust:-4,safety_score:2,innovation:-8,wellbeing:-2,geopolitics:-2,good:false,narrative:"Large firms consolidate. Regulatory capture takes hold."})},
+  ]),
+  mkE("Government AI Failure","Federal benefits system denies 50K claims wrongly","GOVERNANCE",[
+    {label:"Full transparency",desc:"AI audit, FOIA modernisation",icon:"📋",
+      fx:(a)=>({growth:-2,equality:a.nets>=2?4:-2,trust:a.governance>=3?8:-2,safety_score:a.governance>=2?4:0,innovation:0,wellbeing:a.nets>=2?3:-5,geopolitics:2,good:a.governance>=2,narrative:a.governance>=3?"AI Audit Bureau catches flaw in hours. Modernised FOIA lets journalists investigate. Trust recovers.":"Response slow. 50K without benefits for months."})},
+    {label:"Quiet fix",desc:"Patch, compensate, minimise attention",icon:"🤫",
+      fx:()=>({growth:1,equality:-3,trust:-10,safety_score:-3,innovation:0,wellbeing:-4,geopolitics:-2,good:false,narrative:"Whistleblowers talk. Coverup becomes the story."})},
+  ]),
+  mkE("The Care Pivot","AI eliminates 3M admin jobs — care sectors desperate for workers","LABOUR",[
+    {label:"Build care pathways",desc:"Training, wage subsidies, portable benefits",icon:"❤",
+      fx:(a)=>({growth:3,equality:a.nets>=2?7:3,trust:a.workers>=2?6:2,safety_score:0,innovation:2,wellbeing:(a.workers>=2&&a.nets>=2)?12:4,geopolitics:1,good:(a.workers>=1&&a.nets>=1),narrative:(a.workers>=2&&a.nets>=2)?"Portable benefits follow workers. 4-day week pilots succeed. Human economy takes shape.":"Some transition. Gaps leave many stranded."})},
+    {label:"Let markets sort it",desc:"Remove barriers, don't direct investment",icon:"📈",
+      fx:()=>({growth:5,equality:-6,trust:-4,safety_score:0,innovation:3,wellbeing:-8,geopolitics:0,good:false,narrative:"Displaced can't afford retraining. Community services hollow out."})},
+  ]),
+  mkE("Allied AI Pact","Allies propose multilateral safety framework","GEOPOLITICS",[
+    {label:"Join and lead",desc:"Co-develop global standards via CAISI",icon:"🌐",
+      fx:(a)=>({growth:a.intl>=2?4:-1,equality:1,trust:4,safety_score:a.intl>=2?6:2,innovation:a.intl>=2?3:-2,wellbeing:1,geopolitics:a.intl>=2?12:6,good:a.intl>=1,narrative:a.intl>=2?"Investments pay off. Shared protocols, real-time risk channels. New era of AI diplomacy.":"Join but lack infrastructure. Allies question commitment."})},
+    {label:"Go it alone",desc:"Maintain sovereign control",icon:"🏛",
+      fx:()=>({growth:3,equality:0,trust:-2,safety_score:-3,innovation:4,wellbeing:0,geopolitics:-10,good:false,narrative:"Short-term flexibility. Long-term isolation."})},
+  ]),
+  mkE("Deepfake Election","Synthetic media floods platforms before election","GOVERNANCE",[
+    {label:"Deploy Trust Stack",desc:"Content provenance, verified signatures, audit trails",icon:"✅",
+      fx:(a)=>({growth:0,equality:0,trust:a.governance>=2?10:2,safety_score:a.governance>=2?4:0,innovation:1,wellbeing:2,geopolitics:a.governance>=2?4:-1,good:a.governance>=2,narrative:a.governance>=2?"Trust Stack flags 94% of synthetic media. Democratic institutions hold.":"Patchy adoption. Misinformation outpaces verification."})},
+    {label:"Emergency censorship",desc:"Block unverified political content",icon:"🚫",
+      fx:()=>({growth:-1,equality:-2,trust:-8,safety_score:1,innovation:-3,wellbeing:-2,geopolitics:-4,good:false,narrative:"Legitimate speech caught. Cure worse than disease."})},
+  ]),
+  mkE("Scientific Breakthrough","AI labs identify Alzheimer's treatment","SCIENCE",[
+    {label:"Scale and distribute",desc:"Fund trials via National Lab Network, global access",icon:"🔬",
+      fx:(a,c)=>({growth:c.science>4?10:4,equality:a.access>=1?5:-2,trust:8,safety_score:1,innovation:a.science>=2?12:5,wellbeing:8,geopolitics:a.intl>=1?5:2,good:true,narrative:c.science>4?"Distributed lab network accelerates trials. Treatment reaches patients everywhere.":"Breakthrough real. Scaling slow. Only top institutions."})},
+    {label:"Secure IP advantage",desc:"Patent aggressively",icon:"🔒",
+      fx:()=>({growth:8,equality:-6,trust:-4,safety_score:0,innovation:4,wellbeing:2,geopolitics:-5,good:false,narrative:"Profits soar. Developing countries wait years."})},
+  ]),
+  mkE("RSP Crisis","Voluntary Responsible Scaling Policies collapse under competition","SAFETY",[
+    {label:"Mandate ASL standards",desc:"Enforce ASL-3+ safeguards across all frontier labs",icon:"📋",
+      fx:(a)=>({growth:-3,equality:1,trust:a.governance>=2?8:3,safety_score:a.safety>=2?10:4,innovation:-4,wellbeing:2,geopolitics:a.intl>=1?4:0,good:a.safety>=1,narrative:a.safety>=2?"Mandatory ASL standards force all labs to implement safeguards. Competition shifts to safety quality.":"Standards pass but enforcement thin."})},
+    {label:"Trust voluntary RSPs",desc:"Let companies self-regulate with transparency",icon:"🤝",
+      fx:()=>({growth:4,equality:-1,trust:-5,safety_score:-6,innovation:5,wellbeing:-2,geopolitics:-3,good:false,narrative:"Without teeth, aggressive labs cut corners. Race to bottom begins."})},
+  ]),
+  // CHAIN EVENTS
+  mkE("Retraining Reckoning","Two years later — did the retraining work?","LABOUR",[
+    {label:"Expand what's working",desc:"Scale successful programs",icon:"📈",
+      fx:(a,c)=>({growth:4,equality:c.nets>6?8:3,trust:6,safety_score:0,innovation:3,wellbeing:c.workers>4?10:4,geopolitics:1,good:c.nets>4,narrative:c.nets>6?"Retraining programs produce results. Model replicated nationwide.":"Some success. Only 40% found equivalent pay."})},
+    {label:"Pivot to direct payments",desc:"Supplement with cash assistance",icon:"💰",
+      fx:()=>({growth:-2,equality:5,trust:3,safety_score:0,innovation:-1,wellbeing:6,geopolitics:0,good:null,narrative:"Cash stabilises families. Underlying displacement problem remains."})},
+  ],HIST.LABOUR,"layoff_retrain",2),
+  mkE("The Protest Wave","Layoff survivors organise for accountability","LABOUR",[
+    {label:"Meet movement leaders",desc:"Negotiate worker councils",icon:"🤝",
+      fx:()=>({growth:-2,equality:6,trust:8,safety_score:0,innovation:1,wellbeing:7,geopolitics:1,good:true,narrative:"Landmark agreement. Workers gain formal veto over harmful deployments."})},
+    {label:"Hold the line",desc:"Weather the storm",icon:"🏛",
+      fx:()=>({growth:2,equality:-5,trust:-8,safety_score:0,innovation:2,wellbeing:-6,geopolitics:-2,good:false,narrative:"General strike in three cities. Public opinion turns against you."})},
+  ],HIST.LABOUR,"layoff_accelerate",2),
+  mkE("Biosecurity Arms Race","Nations race to build bio-defences after pathogen incident","SAFETY",[
+    {label:"Multilateral bio-AI treaty",desc:"Binding international biosecurity standards",icon:"🌐",
+      fx:(a,c)=>({growth:-2,equality:1,trust:6,safety_score:c.safety>8?10:4,innovation:2,wellbeing:3,geopolitics:a.intl>=2?10:4,good:c.safety>6,narrative:c.safety>8?"Early containment built credibility. Treaty passes with strong provisions.":"Treaty passes with weak enforcement."})},
+    {label:"Unilateral buildup",desc:"Invest in national bio-AI defences",icon:"🛡",
+      fx:()=>({growth:-4,equality:0,trust:2,safety_score:8,innovation:-2,wellbeing:1,geopolitics:-6,good:null,narrative:"Defences strengthen. Allies feel abandoned."})},
+  ],HIST.SAFETY,"bio_contained",3),
+  mkE("The Leak Aftermath","Suppressed pathogen data surfaces — international crisis","SAFETY",[
+    {label:"Full disclosure",desc:"Release data, propose transparency standards",icon:"📋",
+      fx:(a)=>({growth:-3,equality:0,trust:a.governance>=2?6:-4,safety_score:4,innovation:1,wellbeing:1,geopolitics:a.intl>=1?4:-4,good:a.governance>=2,narrative:a.governance>=2?"Painful but credible. Some trust returns.":"Too little, too late."})},
+    {label:"Double down",desc:"Maintain classification, deny wrongdoing",icon:"🔒",
+      fx:()=>({growth:1,equality:-2,trust:-12,safety_score:-4,innovation:-2,wellbeing:-4,geopolitics:-10,good:false,narrative:"Denial collapses. Congressional investigation. Partners withdraw."})},
+  ],HIST.SAFETY,"bio_improvised",3),
+  mkE("Dividend Day","Public Wealth Fund pays first major dividend","ECONOMY",[
+    {label:"Celebrate and expand",desc:"Increase contributions, broaden eligibility",icon:"🎉",
+      fx:(a,c)=>({growth:c.wealth>6?8:3,equality:8,trust:10,safety_score:0,innovation:3,wellbeing:6,geopolitics:3,good:true,narrative:c.wealth>6?"Every citizen receives meaningful dividend. Transformative.":"Dividends real but modest."})},
+    {label:"Redirect to safety",desc:"Divert returns to AI safety research",icon:"🛡",
+      fx:()=>({growth:2,equality:-3,trust:-2,safety_score:6,innovation:2,wellbeing:-1,geopolitics:1,good:null,narrative:"Safety accelerates. Citizens feel cheated."})},
+  ],HIST.ECONOMY,"wealth_fund",3),
+  // FINAL
+  mkE("The Threshold","A system surpasses the best human experts across all domains.","SUPERINTELLIGENCE",[
+    {label:"Activate all systems",desc:"Deploy every safeguard, share with allies",icon:"🌍",
+      fx:(a,c)=>{const t=Object.values(c).reduce((s,v)=>s+v,0),r=t>=50,sR=(c.safety||0)+(c.governance||0)>=14,eR=(c.wealth||0)+(c.nets||0)+(c.workers||0)>=14;
+        return{growth:20,equality:eR?12:-10,trust:r?10:-15,safety_score:sR?15:-12,innovation:15,wellbeing:eR?10:-8,geopolitics:(c.intl||0)>=6?10:-5,
+          good:r,narrative:r?"Years of preparation converge. Safety holds. Wealth shared. Humanity crosses together.":"Some systems hold, others buckle. Margin for error has vanished."};}},
+    {label:"Controlled slowdown",desc:"Restrict deployment, buy time",icon:"⏸",
+      fx:()=>({growth:-8,equality:2,trust:-5,safety_score:3,innovation:-15,wellbeing:0,geopolitics:-10,good:false,narrative:"You slow down. World doesn't. Leadership lost."})},
+  ]),
+];
+
+const CHAIN_EVENTS = EVENTS.filter(e => e.chainStep);
+const REGULAR_EVENTS = EVENTS.filter(e => !e.chainStep && e.category !== "SUPERINTELLIGENCE");
+const FINAL_EVENT = EVENTS.find(e => e.category === "SUPERINTELLIGENCE");
+
+// ── GAME LOGIC ──
+function getTrustMult(t) { return t >= 65 ? 1.2 : t <= 35 ? 0.8 : 1; }
+function applyTrust(raw, tm) { return raw > 0 ? Math.round(raw * tm) : raw < 0 ? Math.round(raw * (2 - tm)) : 0; }
+function applyFeedback(m, r, mult) {
+  const n = {...m};
+  const d = (v) => Math.round(v * mult);
+  // Innovation decays without reinvestment
+  if (r > 0) n.innovation = clamp(n.innovation - d(2));
+  // Low equality drags trust
+  if (n.equality < 35) n.trust = clamp(n.trust - d(3));
+  // High growth + low equality → inequality accelerates
+  if (n.growth > 65 && n.equality < 45) n.equality = clamp(n.equality - d(2));
+  // Low safety compounds risk to trust
+  if (n.safety_score < 35) n.trust = clamp(n.trust - d(2));
+  // Low innovation drags growth
+  if (n.innovation < 35) n.growth = clamp(n.growth - d(1));
+  // Low wellbeing erodes equality
+  if (n.wellbeing < 30) n.equality = clamp(n.equality - d(1));
+  // Low trust compounds everything
+  if (n.trust < 25) { n.geopolitics = clamp(n.geopolitics - d(1)); n.wellbeing = clamp(n.wellbeing - d(1)); }
+  return n;
+}
+function getGrade(m) {
+  const v=Object.values(m),a=v.reduce((s,x)=>s+x,0)/v.length,mn=Math.min(...v);
+  if(a>=75&&mn>=50) return {grade:"A",title:"Architect of the Intelligence Age",sub:"Superintelligence benefits everyone."};
+  if(a>=62&&mn>=38) return {grade:"B",title:"Steady Navigator",sub:"Most are better off, though cracks remain."};
+  if(a>=48&&mn>=25) return {grade:"C",title:"Damage Limiter",sub:"Worst prevented, opportunity missed."};
+  if(a>=35) return {grade:"D",title:"Too Little, Too Late",sub:"Transition overwhelmed preparations."};
+  return {grade:"F",title:"Lost Control",sub:"Chaos. Power concentrated. Safety failed."};
+}
+function endNarrative(m, cum, hist) {
+  const p = [];
+  if(m.growth>=65) p.push("The AI economy boomed. Productivity gains translated into broad-based growth.");
+  else if(m.growth<35) p.push("Growth stalled. Without infrastructure and innovation investment, the AI dividend never materialised.");
+  if(m.equality>=65) p.push("The Public Wealth Fund narrowed inequality for the first time in decades.");
+  else if(m.equality<35) p.push("Inequality hit historic highs. AI's gains flowed to the few.");
+  if(m.trust>=65) p.push("Democratic institutions adapted. Transparency and auditing kept governance legitimate.");
+  else if(m.trust<35) p.push("Public trust collapsed under scandals and broken promises.");
+  if(m.safety_score>=65) p.push("Safety investments created containment architecture that held when it mattered.");
+  else if(m.safety_score<35) p.push("Without safety infrastructure, incidents compounded.");
+  if(m.innovation>=65) p.push("Innovation flourished. Distributed labs and open access created a vibrant ecosystem.");
+  else if(m.innovation<35) p.push("Innovation atrophied from overregulation or underinvestment.");
+  if(m.wellbeing>=65) p.push("Workers found new pathways. Portable benefits and shorter weeks created security.");
+  else if(m.wellbeing<35) p.push("Workers bore the brunt. Outdated safety nets buckled.");
+  if(m.geopolitics>=65) p.push("The Global AI Accord became the Bretton Woods of the Intelligence Age.");
+  else if(m.geopolitics<35) p.push("International isolation left you facing crises alone.");
+  const cc = hist.filter(h=>h.isChain).length;
+  if(cc>0) p.push(`${cc} event${cc>1?"s were":" was"} a direct consequence of earlier decisions.`);
+  return p.length>0?p.join(" "):"A mixed record. The transition continues.";
+}
+
+// ── STYLES ──
+const fonts = `@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600;6..72,700;6..72,800&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap');`;
+const T={bg:"#F8F6F1",sf:"#FFFFFF",sa:"#F2F0EB",bd:"#E2DFD8",tx:"#1A1A1A",t2:"#5C5852",tm:"#8A857C",tf:"#B5B0A7",ac:"#2563EB",gd:"#16A34A",gb:"#F0FDF4",wn:"#CA8A04",wb:"#FEFCE8",bad:"#DC2626",bb:"#FEF2F2"};
+const S={
+  pg:{minHeight:"100vh",background:T.bg,color:T.tx,fontFamily:"'Outfit',sans-serif"},
+  in:{maxWidth:780,margin:"0 auto",padding:"28px 20px"},
+  cd:{background:T.sf,border:`1px solid ${T.bd}`,borderRadius:14,padding:20,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"},
+  hl:{fontFamily:"'Newsreader',serif",fontWeight:800,lineHeight:1.15,color:T.tx},
+  mn:{fontFamily:"'JetBrains Mono',monospace"},
+  lb:{fontSize:10,letterSpacing:"0.22em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace",color:T.tm},
+  bt:{border:"none",borderRadius:10,padding:"13px 28px",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"'Outfit',sans-serif",transition:"all 0.15s"},
+};
+const catCol={LABOUR:"#C05621",INFRASTRUCTURE:"#CA8A04",SAFETY:"#DC2626",ECONOMY:"#16A34A",GOVERNANCE:"#0891B2",GEOPOLITICS:"#4F46E5",SCIENCE:"#C026D3",SUPERINTELLIGENCE:"#DC2626"};
+const grd = (min) => ({display:"grid",gridTemplateColumns:`repeat(auto-fill,minmax(${min}px,1fr))`,gap:8});
+
+// ── COMPONENTS ──
+function Ring({value,color}){const sz=36,st=2.5,r=(sz-st)/2,ci=2*Math.PI*r;return(<svg width={sz} height={sz} style={{transform:"rotate(-90deg)"}}><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={T.bd} strokeWidth={st}/><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={color} strokeWidth={st} strokeDasharray={ci} strokeDashoffset={ci-(value/100)*ci} strokeLinecap="round" style={{transition:"stroke-dashoffset 0.8s ease"}}/></svg>);}
+
+// PHASE 4: Sparkline component
+function Sparkline({data, color, width=60, height=20}) {
+  if (!data || data.length < 2) return null;
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const pts = data.map((v,i) => `${(i/(data.length-1))*width},${height - ((v-min)/range)*height}`).join(" ");
+  return (<svg width={width} height={height} style={{display:"inline-block",verticalAlign:"middle",marginLeft:4}}>
+    <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <circle cx={(data.length-1)/(data.length-1)*width} cy={height-((data[data.length-1]-min)/range)*height} r="2" fill={color}/>
+  </svg>);
+}
+
+function MetricBar({metric,value,prev,history:hist}){
+  const d=value-prev,col=value>=60?T.gd:value>=40?T.wn:T.bad;
+  return(<div style={{marginBottom:9}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}>
+      <span style={{fontSize:13,color:T.t2,fontWeight:500}}>{metric.icon} {metric.label}</span>
+      <span style={{display:"flex",alignItems:"center",gap:4}}>
+        {hist && <Sparkline data={hist} color={col} />}
+        <span style={{...S.mn,fontSize:12,fontWeight:600,color:d>0?T.gd:d<0?T.bad:T.tm}}>{value}{d!==0&&` (${d>0?"+":""}${d})`}</span>
+      </span>
+    </div>
+    <div style={{height:7,background:T.sa,borderRadius:4,overflow:"hidden",border:`1px solid ${T.bd}`}}>
+      <div style={{height:"100%",width:`${value}%`,background:col,borderRadius:3,transition:"width 0.8s ease"}}/>
+    </div>
+  </div>);
+}
+
+function Btn({children,onClick,disabled,color,style:sx}){return(<button style={{...S.bt,background:disabled?T.sa:(color||T.ac),color:disabled?T.tf:"#fff",cursor:disabled?"not-allowed":"pointer",boxShadow:disabled?"none":`0 2px 8px ${(color||T.ac)}33`,...sx}} onClick={disabled?undefined:onClick} onMouseOver={e=>!disabled&&(e.target.style.transform="translateY(-2px)")} onMouseOut={e=>e.target.style.transform=""}>{children}</button>);}
+function Timeline({round}){const pct=(round/ROUNDS)*100,ls=["Narrow AI","General Agents","Expert Systems","Pre-Super","Superintelligence"];return(<div style={{...S.cd,padding:"10px 16px",marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><span style={S.lb}>AI CAPABILITY</span><span style={{...S.mn,fontSize:11,fontWeight:600,color:T.bad}}>{ls[Math.min(Math.floor(round/2),4)]}</span></div><div style={{height:5,background:T.sa,borderRadius:3,overflow:"hidden",border:`1px solid ${T.bd}`}}><div style={{height:"100%",width:`${pct}%`,borderRadius:2,background:"linear-gradient(90deg,#2563EB,#7C3AED,#DC2626)",transition:"width 1s ease"}}/></div></div>);}
+
+// Glossary popup
+function InfoButton({term}) {
+  const [open,setOpen] = useState(false);
+  const def = GLOSSARY[term];
+  if (!def) return null;
+  return (<span style={{position:"relative",display:"inline-block"}}>
+    <button onClick={(e)=>{e.stopPropagation();setOpen(!open);}} style={{background:"none",border:`1px solid ${T.bd}`,borderRadius:4,padding:"0 4px",fontSize:10,color:T.ac,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",lineHeight:"16px",verticalAlign:"middle",marginLeft:3}}>?</button>
+    {open && <div onClick={e=>e.stopPropagation()} style={{position:"absolute",bottom:"calc(100% + 8px)",left:"50%",transform:"translateX(-50%)",width:320,background:T.sf,border:`1px solid ${T.bd}`,borderRadius:12,padding:14,boxShadow:"0 8px 24px rgba(0,0,0,0.12)",zIndex:100,textAlign:"left"}}>
+      <div style={{...S.mn,fontSize:11,fontWeight:600,color:T.ac,marginBottom:4}}>{term}</div>
+      <div style={{fontSize:12,color:T.t2,lineHeight:1.6}}>{def}</div>
+      <button onClick={()=>setOpen(false)} style={{...S.bt,fontSize:10,padding:"4px 10px",background:T.sa,color:T.tm,border:`1px solid ${T.bd}`,marginTop:8}}>Close</button>
+    </div>}
+  </span>);
+}
+
+// ══════════════ MAIN ══════════════
+export default function Phase4() {
+  const [phase, setPhase] = useState("intro");
+  const [difficulty, setDifficulty] = useState(null);
+  const [round, setRound] = useState(0);
+  const [metrics, setMetrics] = useState({...INIT});
+  const [prevMetrics, setPrevMetrics] = useState({...INIT});
+  const [preMicroMetrics, setPreMicroMetrics] = useState(null);
+  const [metricHistory, setMetricHistory] = useState([{...INIT}]); // PHASE 4: sparkline data
+  const [alloc, setAlloc] = useState(emptyAlloc());
+  const [cumulative, setCumulative] = useState(emptyAlloc());
+  const [pointsLeft, setPointsLeft] = useState(10);
+  const [bonusPoints, setBonusPoints] = useState(0);
+  const [currentEvent, setCurrentEvent] = useState(null);
+  const [choiceIdx, setChoiceIdx] = useState(null);
+  const [result, setResult] = useState(null);
+  const [microEvent, setMicroEvent] = useState(null);
+  const [usedEvents, setUsedEvents] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [showAdvisors, setShowAdvisors] = useState(false);
+  const [showFactions, setShowFactions] = useState(false);
+  const [showHist, setShowHist] = useState(false);
+  const [showGlossary, setShowGlossary] = useState(false);
+  const [factionSat, setFactionSat] = useState({});
+  const [factionMsg, setFactionMsg] = useState([]); // PHASE 4: faction consequence messages
+  const [pendingChains, setPendingChains] = useState([]);
+  const [questProgress, setQuestProgress] = useState({econ:0,sec:0,ppl:0});
+  const [newUnlocks, setNewUnlocks] = useState([]);
+  const [factionDemand, setFactionDemand] = useState(null); // {faction, policy, amount, rewardFx, rewardMsg, penaltyFx, penaltyMsg}
+  const [demandResult, setDemandResult] = useState(null); // {met, msg, fx}
+  const [advisorMissions, setAdvisorMissions] = useState([]); // [{advisor, policy, amount, rewardFx, desc}]
+  const [missionResults, setMissionResults] = useState([]); // [{advisor, met, desc}]
+  const topRef = useRef(null);
+
+  const diff = difficulty ? DIFFICULTIES.find(d=>d.id===difficulty) : DIFFICULTIES[1];
+  const basePts = diff.pts;
+  const totalPoints = basePts + bonusPoints;
+  const year = 2026 + round;
+
+  useEffect(() => { topRef.current?.scrollIntoView({behavior:"smooth"}); }, [phase]);
+
+  const adjust = (id, delta) => {
+    const nv = (alloc[id]||0) + delta;
+    if (nv < 0 || nv > 6 || (delta > 0 && pointsLeft <= 0)) return;
+    setAlloc(p => ({...p, [id]: nv}));
+    setPointsLeft(p => p - delta);
+  };
+  const resetAlloc = () => { setAlloc(emptyAlloc()); setPointsLeft(totalPoints); };
+
+  const activeSynergies = useMemo(() => getSyn(alloc), [alloc]);
+  const tier2Unlocked = useMemo(() => POLICIES.filter(p => (cumulative[p.id]||0) >= p.t2.thresh).map(p => p.t2), [cumulative]);
+  const factions = useMemo(() => FACTIONS.map(f => ({...f, sat: clamp(50 + f.calc(alloc), 0, 100)})), [alloc]);
+
+  // PHASE 4: check if a conditional choice is available
+  const isChoiceAvailable = (choice) => {
+    if (!choice.requires) return true;
+    return (cumulative[choice.requires.policy] || 0) >= choice.requires.cumMin;
+  };
+
+  // Generate faction demand for a round
+  const generateDemand = (rd, mets, fSat) => {
+    const demands = [
+      {fid:"tech",policies:["grid","science","access"],
+        templates:[
+          {p:"grid",a:2,rMsg:"Tech industry co-funds data centre expansion.",pMsg:"Tech lobby blocks infrastructure permits.",rFx:{growth:3,innovation:2},pFx:{innovation:-3,growth:-2}},
+          {p:"science",a:2,rMsg:"Tech firms open-source research tools.",pMsg:"Tech investment redirected overseas.",rFx:{innovation:3},pFx:{innovation:-4}},
+          {p:"access",a:2,rMsg:"Tech companies subsidise AI access programs.",pMsg:"AI platforms raise enterprise pricing.",rFx:{equality:2,innovation:2},pFx:{innovation:-2,equality:-2}},
+        ]},
+      {fid:"labour",policies:["workers","nets","wealth"],
+        templates:[
+          {p:"workers",a:2,rMsg:"Unions endorse your AI governance agenda.",pMsg:"Wildcat strikes disrupt manufacturing sector.",rFx:{trust:3,wellbeing:2},pFx:{wellbeing:-4,trust:-2}},
+          {p:"nets",a:2,rMsg:"Labour movement mobilises for retraining programs.",pMsg:"Workers march on the capital. Coverage dominates news cycle.",rFx:{wellbeing:3,equality:1},pFx:{wellbeing:-3,trust:-3}},
+          {p:"wealth",a:2,rMsg:"Labour backs the Public Wealth Fund publicly.",pMsg:"Union leaders call for CEO accountability hearings.",rFx:{equality:2,trust:2},pFx:{trust:-3,equality:-2}},
+        ]},
+      {fid:"security",policies:["safety","governance","intl"],
+        templates:[
+          {p:"safety",a:2,rMsg:"Security agencies share classified AI threat intel.",pMsg:"Intelligence community withholds critical briefings.",rFx:{safety_score:3,trust:1},pFx:{safety_score:-3,geopolitics:-2}},
+          {p:"governance",a:2,rMsg:"Security backs your auditing framework publicly.",pMsg:"Leaked memo reveals security establishment opposes your agenda.",rFx:{trust:3,safety_score:1},pFx:{trust:-3,safety_score:-2}},
+          {p:"intl",a:2,rMsg:"Five Eyes allies deepen AI risk-sharing.",pMsg:"Allied intelligence cooperation stalls.",rFx:{geopolitics:3,safety_score:1},pFx:{geopolitics:-3,safety_score:-1}},
+        ]},
+      {fid:"civil",policies:["wealth","access","governance","nets"],
+        templates:[
+          {p:"governance",a:2,rMsg:"NGOs endorse transparency reforms.",pMsg:"Watchdog orgs launch damaging investigation.",rFx:{trust:3,equality:1},pFx:{trust:-4,equality:-1}},
+          {p:"access",a:2,rMsg:"Community groups pilot AI literacy programs.",pMsg:"Digital rights orgs campaign against your AI agenda.",rFx:{equality:3,trust:1},pFx:{trust:-3,equality:-2}},
+          {p:"nets",a:2,rMsg:"Charities amplify safety net enrollment.",pMsg:"Poverty advocacy groups condemn your budget priorities.",rFx:{wellbeing:2,equality:2},pFx:{wellbeing:-2,trust:-3}},
+        ]},
+    ];
+    // Pick faction with lowest satisfaction (most likely to make demands)
+    const sorted = [...demands].sort((a,b) => (fSat[a.fid]||50) - (fSat[b.fid]||50));
+    const pick = sorted[rd % sorted.length]; // rotate but bias toward unhappy factions
+    const tmpl = pick.templates[Math.floor(Math.random() * pick.templates.length)];
+    const fac = FACTIONS.find(f => f.id === pick.fid);
+    return {faction:fac, policy:tmpl.p, amount:tmpl.a, rewardMsg:tmpl.rMsg, penaltyMsg:tmpl.pMsg, rewardFx:tmpl.rFx, penaltyFx:tmpl.pFx};
+  };
+
+  // Generate advisor missions for a round
+  const generateMissions = (rd, mets, cum) => {
+    return ADVISORS.map(a => {
+      // Each advisor picks a mission based on weakest metric in their domain
+      let policy, reason;
+      if (a.id === "econ") {
+        policy = mets.growth < mets.innovation ? "grid" : mets.innovation < 45 ? "science" : "access";
+        reason = mets.growth < 45 ? "GDP needs support" : mets.innovation < 45 ? "Innovation pipeline is thin" : "Broaden economic participation";
+      } else if (a.id === "sec") {
+        policy = mets.safety_score < mets.trust ? "safety" : mets.geopolitics < 45 ? "intl" : "governance";
+        reason = mets.safety_score < 45 ? "Safety gap is dangerous" : mets.geopolitics < 45 ? "Allies need reassurance" : "Audit capacity insufficient";
+      } else {
+        policy = mets.wellbeing < mets.equality ? "nets" : mets.equality < 45 ? "wealth" : "workers";
+        reason = mets.wellbeing < 45 ? "Workers are suffering" : mets.equality < 45 ? "Inequality is widening" : "Workers need a voice";
+      }
+      const pol = POLICIES.find(p => p.id === policy);
+      return {advisor: a, policy, policyLabel: pol?.label || policy, amount: 2, reason,
+        rewardFx: {[a.quest[0] === policy ? "trust" : METRICS[Math.floor(Math.random()*3)].id]: 2}};
+    });
+  };
+
+  // Initialize demands/missions for first round
+  useEffect(() => {
+    if (phase === "allocate" && !factionDemand) {
+      setFactionDemand(generateDemand(round, metrics, factionSat));
+      setAdvisorMissions(generateMissions(round, metrics, cumulative));
+    }
+  }, [phase]);
+
+  const submitAllocation = () => {
+    const newCum = {...cumulative};
+    POLICIES.forEach(p => { newCum[p.id] = (newCum[p.id]||0) + (alloc[p.id]||0); });
+    // Detect new tier-2 unlocks this round
+    const freshUnlocks = POLICIES.filter(p => {
+      const wasBelowThreshold = (cumulative[p.id]||0) < p.t2.thresh;
+      const nowAtOrAbove = (newCum[p.id]||0) >= p.t2.thresh;
+      return wasBelowThreshold && nowAtOrAbove;
+    }).map(p => ({policy: p, t2: p.t2}));
+    setNewUnlocks(freshUnlocks);
+    setCumulative(newCum);
+
+    // PHASE 4: faction consequences with messages
+    const nfs = {}, msgs = [];
+    FACTIONS.forEach(f => {
+      const newSat = clamp((factionSat[f.id]||50) + f.calc(alloc), 0, 100);
+      nfs[f.id] = newSat;
+      if (newSat < 30) msgs.push({faction:f.name,icon:f.icon,color:f.color,type:"penalty",msg:f.lowMsg,fx:f.lowPenalty});
+      else if (newSat > 80) msgs.push({faction:f.name,icon:f.icon,color:f.color,type:"bonus",msg:f.highMsg,fx:f.highBonus});
+    });
+    setFactionSat(nfs);
+    setFactionMsg(msgs);
+
+    // Resolve faction demand
+    let dResult = null;
+    if (factionDemand) {
+      const met = (alloc[factionDemand.policy] || 0) >= factionDemand.amount;
+      dResult = met
+        ? {met:true, msg:`${factionDemand.faction.icon} ${factionDemand.faction.name}: ${factionDemand.rewardMsg}`, fx:factionDemand.rewardFx, color:T.gd}
+        : {met:false, msg:`${factionDemand.faction.icon} ${factionDemand.faction.name}: ${factionDemand.penaltyMsg}`, fx:factionDemand.penaltyFx, color:T.bad};
+      // Adjust faction satisfaction based on demand outcome
+      if (met) nfs[factionDemand.faction.id] = clamp((nfs[factionDemand.faction.id]||50) + 10, 0, 100);
+      else nfs[factionDemand.faction.id] = clamp((nfs[factionDemand.faction.id]||50) - 12, 0, 100);
+      setFactionSat(nfs);
+      setDemandResult(dResult);
+    }
+
+    // Resolve advisor missions
+    const mResults = advisorMissions.map(m => {
+      const met = (alloc[m.policy] || 0) >= m.amount;
+      return {advisor: m.advisor, met, policy: m.policyLabel, reason: m.reason, fx: met ? m.rewardFx : null};
+    });
+    setMissionResults(mResults);
+    // Advisor quest progress: count met missions toward quest
+    setQuestProgress(prev => {
+      const n = {...prev};
+      mResults.forEach(mr => { if (mr.met) n[mr.advisor.id] = Math.min((n[mr.advisor.id]||0) + 1, 3); });
+      return n;
+    });
+
+    setPreMicroMetrics({...metrics});
+
+    // Apply faction consequences to metrics
+    let currentMetrics = {...metrics};
+    msgs.forEach(m => {
+      Object.entries(m.fx).forEach(([k,v]) => { currentMetrics[k] = clamp((currentMetrics[k]||50) + v); });
+    });
+    // Apply demand result
+    if (dResult) {
+      Object.entries(dResult.fx).forEach(([k,v]) => { currentMetrics[k] = clamp((currentMetrics[k]||50) + v); });
+    }
+    // Apply completed mission bonuses
+    mResults.filter(r => r.met && r.fx).forEach(r => {
+      Object.entries(r.fx).forEach(([k,v]) => { currentMetrics[k] = clamp((currentMetrics[k]||50) + v); });
+    });
+
+    // Micro event
+    if (Math.random() < diff.microChance && round < ROUNDS - 1) {
+      const me = MICRO[Math.floor(Math.random() * MICRO.length)];
+      setMicroEvent(me);
+      Object.entries(me.fx).forEach(([k,v]) => { currentMetrics[k] = clamp((currentMetrics[k]||50) + v); });
+    } else setMicroEvent(null);
+    setMetrics(currentMetrics);
+
+    // Pick event
+    const dueChain = pendingChains.find(c => c.roundDue === round);
+    let event;
+    if (round === ROUNDS - 1) event = FINAL_EVENT;
+    else if (dueChain) {
+      event = CHAIN_EVENTS.find(e => e.chainId === dueChain.triggerId);
+      if (!event) { const pool=REGULAR_EVENTS.filter((_,i)=>!usedEvents.includes(i)); event=(pool.length>0?pool:REGULAR_EVENTS)[Math.floor(Math.random()*(pool.length||REGULAR_EVENTS.length))]; setUsedEvents(p=>[...p,REGULAR_EVENTS.indexOf(event)]); }
+      setPendingChains(prev => prev.filter(c => c !== dueChain));
+    } else {
+      const pool=REGULAR_EVENTS.filter((_,i)=>!usedEvents.includes(i)); const src=pool.length>0?pool:REGULAR_EVENTS;
+      event=src[Math.floor(Math.random()*src.length)]; setUsedEvents(p=>[...p,REGULAR_EVENTS.indexOf(event)]);
+    }
+    setCurrentEvent(event); setChoiceIdx(null); setShowHist(false); setPhase("event");
+  };
+
+  const resolveEvent = () => {
+    const choice = currentEvent.choices[choiceIdx];
+    const res = choice.fx(alloc, cumulative);
+    const tm = getTrustMult(metrics.trust);
+    const synB = {}; activeSynergies.forEach(s => Object.entries(s.bonus).forEach(([k,v]) => { synB[k]=(synB[k]||0)+v; }));
+    const t2B = {}; tier2Unlocked.forEach(t => Object.entries(t.passive).forEach(([k,v]) => { t2B[k]=(t2B[k]||0)+v; }));
+    const qB = {}; ADVISORS.forEach(a => { if(questProgress[a.id]>=3){qB.trust=(qB.trust||0)+2;qB.innovation=(qB.innovation||0)+1;}});
+
+    setPrevMetrics(preMicroMetrics || {...metrics});
+    const nm = {};
+    METRICS.forEach(m => {
+      const raw = (res[m.id]||0) + (synB[m.id]||0) + (t2B[m.id]||0) + (qB[m.id]||0);
+      nm[m.id] = clamp((metrics[m.id]||50) + applyTrust(raw, tm));
+    });
+    const final = applyFeedback(nm, round, diff.feedbackMult);
+    setMetrics(final);
+    setMetricHistory(prev => [...prev, {...final}]);
+
+    if (choice.chainTrigger && round < ROUNDS - 2) {
+      const cd = CHAIN_EVENTS.find(e => e.chainId === choice.chainTrigger);
+      if (cd) setPendingChains(prev => [...prev, {triggerId: choice.chainTrigger, roundDue: round + (cd.chainStep||2)}]);
+    }
+
+    setResult({...res,synB,t2B,qB,tm,choiceLabel:choice.label,isChain:!!currentEvent.chainStep,isGood:res.good});
+    setHistory(p => [...p, {year,eventTitle:currentEvent.title,category:currentEvent.category,choiceLabel:choice.label,narrative:res.narrative,synergies:activeSynergies.map(s=>s.label),microText:microEvent?.text,isChain:!!currentEvent.chainStep,isGood:res.good,factionMsgs:factionMsg}]);
+    const avg = Object.values(final).reduce((a,b)=>a+b,0)/Object.values(final).length;
+    setBonusPoints(avg>=70?2:avg>=55?1:0);
+    setPhase("summary");
+  };
+
+  const nextRound = () => {
+    if (round+1>=ROUNDS) { setPhase("end"); return; }
+    const newRd = round + 1;
+    setRound(newRd); setAlloc(emptyAlloc()); setPointsLeft(basePts+bonusPoints);
+    setCurrentEvent(null); setResult(null); setChoiceIdx(null); setMicroEvent(null); setPreMicroMetrics(null);
+    setShowAdvisors(false); setShowFactions(false); setShowHist(false); setFactionMsg([]); setNewUnlocks([]);
+    setDemandResult(null); setMissionResults([]);
+    // Generate new demand and missions for next round
+    setFactionDemand(generateDemand(newRd, metrics, factionSat));
+    setAdvisorMissions(generateMissions(newRd, metrics, cumulative));
+    setPhase("allocate");
+  };
+
+  const restart = () => {
+    setPhase("intro"); setRound(0); setMetrics({...INIT}); setPrevMetrics({...INIT}); setPreMicroMetrics(null);
+    setMetricHistory([{...INIT}]); setAlloc(emptyAlloc()); setCumulative(emptyAlloc());
+    setPointsLeft(10); setBonusPoints(0); setCurrentEvent(null); setChoiceIdx(null); setResult(null); setMicroEvent(null);
+    setUsedEvents([]); setHistory([]); setShowAdvisors(false); setShowFactions(false); setShowHist(false); setShowGlossary(false);
+    setFactionSat({}); setFactionMsg([]); setPendingChains([]); setQuestProgress({econ:0,sec:0,ppl:0}); setDifficulty(null); setNewUnlocks([]);
+    setFactionDemand(null); setDemandResult(null); setAdvisorMissions([]); setMissionResults([]);
+  };
+
+  const grade = getGrade(metrics);
+  const upcomingChains = pendingChains.filter(c => c.roundDue > round);
+  const lastRound = history.length > 0 ? history[history.length-1] : null;
+
+  // ── INTRO with difficulty selector ──
+  if (phase === "intro") return (
+    <div style={S.pg}>
+      <style>{fonts}{`
+        @keyframes nodeIn{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
+        @keyframes edgeIn{from{stroke-dashoffset:200;opacity:0}to{stroke-dashoffset:0;opacity:1}}
+        @keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+        .ni{animation:nodeIn .5s ease both;transform-origin:center}
+        .ei{stroke-dasharray:200;animation:edgeIn .8s ease both}
+        .pu{animation:pulse 3s ease-in-out infinite}
+        .fu{animation:fadeUp .6s ease both}
+      `}</style>
+      <div ref={topRef}/>
+      <div style={{...S.in,paddingTop:32,textAlign:"center"}}>
+        {/* Compact network viz */}
+        <div style={{position:"relative",maxWidth:680,margin:"0 auto 4px",overflow:"hidden",borderRadius:18}}>
+          <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,#F8F6F100 0%,#F8F6F1 90%)",zIndex:2,pointerEvents:"none"}}/>
+          <svg viewBox="0 0 760 400" style={{width:"100%",display:"block"}}>
+            <defs><pattern id="g" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0L0 0 0 40" fill="none" stroke="#E2DFD822" strokeWidth=".5"/></pattern></defs>
+            <rect width="760" height="400" fill="url(#g)"/>
+            {[[380,60,6,"Narrow AI",0],[200,110,5,,0.3],[560,100,5,,0.5],[320,160,7,"Agents",1],[500,170,4,,1.1],[180,240,5,,1.5],[400,230,8,"Expert AI",1.8],[580,250,5,,2],[300,310,6,,2.4],[500,320,5,,2.6],[380,370,10,"Super-intelligence",3.2]].map(([x,y,r,l,d],i)=>(
+              <g key={i} className="ni" style={{animationDelay:`${d}s`}}>
+                <circle cx={x} cy={y} r={r*2.5} fill={d>2.8?"#DC262610":"#2563EB10"} className="pu" style={{animationDelay:`${d+1}s`}}/>
+                <circle cx={x} cy={y} r={r} fill={d>2.8?"#DC2626":d>1.5?"#7C3AED":"#2563EB"} opacity=".85"/>
+                {l&&<text x={x} y={y-r-7} textAnchor="middle" fill={T.tm} fontSize="9" fontFamily="'JetBrains Mono',monospace" fontWeight="500">{l}</text>}
+              </g>
+            ))}
+            {[[0,1],[0,2],[1,3],[2,4],[3,5],[3,6],[4,7],[5,8],[6,8],[6,9],[7,9],[8,10],[9,10]].map(([a,b],i)=>{
+              const ns=[[380,60],[200,110],[560,100],[320,160],[500,170],[180,240],[400,230],[580,250],[300,310],[500,320],[380,370]];
+              return <line key={i} className="ei" x1={ns[a][0]} y1={ns[a][1]} x2={ns[b][0]} y2={ns[b][1]} stroke={i>9?"#DC262644":"#2563EB33"} strokeWidth={i>9?1.5:1} style={{animationDelay:`${i*0.25+0.5}s`}}/>;
+            })}
+          </svg>
+        </div>
+
+        <div className="fu" style={{animationDelay:"0.2s"}}>
+          <div style={{...S.lb,color:T.ac,marginBottom:8,letterSpacing:"0.35em",fontSize:11}}>POLICY SIMULATION</div>
+        </div>
+        <h1 className="fu" style={{...S.hl,fontSize:48,marginBottom:8,animationDelay:"0.3s"}}>The Intelligence Age</h1>
+        <p className="fu" style={{fontSize:15,color:T.t2,maxWidth:520,margin:"0 auto 24px",lineHeight:1.75,animationDelay:"0.4s"}}>
+          Steer a nation through 8 years of the AI transition. Your choices cascade — triggering crises, shaping factions, and determining whether superintelligence benefits everyone or concentrates power.
+        </p>
+
+        {/* PHASE 4: Difficulty selector */}
+        <div className="fu" style={{animationDelay:"0.5s",maxWidth:600,margin:"0 auto 24px"}}>
+          <div style={{...S.lb,marginBottom:8,color:T.ac}}>SELECT DIFFICULTY</div>
+          <div style={grd(130)}>
+            {DIFFICULTIES.map(d => (
+              <button key={d.id} onClick={() => setDifficulty(d.id)} style={{
+                ...S.cd, padding:14, cursor:"pointer", textAlign:"center",
+                borderColor: difficulty===d.id ? T.ac : T.bd,
+                background: difficulty===d.id ? T.ac+"08" : T.sf,
+                boxShadow: difficulty===d.id ? `0 0 0 2px ${T.ac}22` : S.cd.boxShadow,
+                transition:"all 0.2s",
+              }}>
+                <div style={{fontSize:14,fontWeight:700,color:difficulty===d.id?T.ac:T.tx,marginBottom:2}}>{d.label}</div>
+                <div style={{...S.mn,fontSize:20,fontWeight:700,color:difficulty===d.id?T.ac:T.tm}}>{d.pts}</div>
+                <div style={{fontSize:9,color:T.tm}}>pts/round</div>
+                <div style={{fontSize:10,color:T.t2,marginTop:4,lineHeight:1.4}}>{d.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Feature pills */}
+        <div className="fu" style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:6,maxWidth:600,margin:"0 auto 24px",animationDelay:"0.7s"}}>
+          {[{i:"🔗",l:"Event Chains"},{i:"📜",l:"History Cards"},{i:"🔓",l:"Policy Trees"},{i:"⚒",l:"Factions"},{i:"🎯",l:"Quests"},{i:"📈",l:"Sparklines"},{i:"🔒",l:"Locked Choices"}].map(f=>(
+            <div key={f.l} style={{background:T.sf,border:`1px solid ${T.bd}`,borderRadius:8,padding:"4px 12px",fontSize:11,fontWeight:600,color:T.tx,display:"flex",alignItems:"center",gap:4}}>
+              <span>{f.i}</span>{f.l}
+            </div>
+          ))}
+        </div>
+
+        <div className="fu" style={{animationDelay:"0.9s"}}>
+          <Btn disabled={!difficulty} onClick={() => { setAlloc(emptyAlloc()); setPointsLeft(diff.pts); setPhase("allocate"); }} style={{padding:"16px 40px",fontSize:16}}>
+            {difficulty ? `Begin Year 2026 (${diff.label}) →` : "Select difficulty to begin"}
+          </Btn>
+        </div>
+
+        {/* Glossary link */}
+        <div className="fu" style={{animationDelay:"1s",marginTop:16}}>
+          <button onClick={() => setShowGlossary(!showGlossary)} style={{...S.bt,background:"transparent",color:T.tm,fontSize:12,border:`1px solid ${T.bd}`,padding:"6px 16px"}}>
+            📖 {showGlossary ? "Hide" : "Show"} Glossary ({Object.keys(GLOSSARY).length} terms)
+          </button>
+        </div>
+        {showGlossary && (
+          <div style={{...S.cd,textAlign:"left",maxWidth:600,margin:"12px auto 0",maxHeight:300,overflowY:"auto"}}>
+            {Object.entries(GLOSSARY).map(([term,def]) => (
+              <div key={term} style={{marginBottom:12,paddingBottom:12,borderBottom:`1px solid ${T.bd}`}}>
+                <div style={{...S.mn,fontSize:12,fontWeight:600,color:T.ac,marginBottom:2}}>{term}</div>
+                <div style={{fontSize:12,color:T.t2,lineHeight:1.6}}>{def}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="fu" style={{animationDelay:"1.1s",marginTop:12}}>
+          <span style={{...S.mn,fontSize:10,color:T.tf}}>Based on OpenAI · Anthropic RSP · WEF · White House AI Action Plan</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── ALLOCATE ──
+  if (phase === "allocate") return (
+    <div style={S.pg}><style>{fonts}</style><div ref={topRef}/><div style={S.in}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+        <div><div style={{...S.lb,marginBottom:3}}>YEAR {year} — ROUND {round+1}/{ROUNDS} · {diff.label.toUpperCase()}</div><h2 style={{...S.hl,fontSize:26,margin:0}}>Allocate Resources</h2></div>
+        <div style={{textAlign:"center",background:pointsLeft===0?T.gb:T.sf,border:`1px solid ${pointsLeft===0?"#BBF7D0":T.bd}`,borderRadius:12,padding:"6px 16px"}}>
+          <div style={{...S.mn,fontSize:26,fontWeight:700,color:pointsLeft===0?T.gd:T.tx}}>{pointsLeft}</div>
+          <div style={{...S.lb,fontSize:8}}>{bonusPoints>0?`${basePts}+${bonusPoints}`:"PTS LEFT"}</div>
+        </div>
+      </div>
+      <Timeline round={round}/>
+      {lastRound && (<div style={{...S.cd,padding:"10px 14px",marginBottom:10,borderColor:lastRound.isGood?"#BBF7D0":lastRound.isGood===false?"#FECACA":T.bd,background:lastRound.isGood?T.gb:lastRound.isGood===false?T.bb:T.sa}}>
+        <div style={{...S.lb,fontSize:8,marginBottom:3}}>LAST YEAR: {lastRound.eventTitle}</div>
+        <div style={{fontSize:12,color:T.t2,lineHeight:1.5}}>{lastRound.narrative}</div>
+      </div>)}
+      {/* Faction consequences from last round */}
+      {factionMsg.length > 0 && (<div style={{...S.cd,padding:"10px 14px",marginBottom:10,borderColor:factionMsg[0].type==="bonus"?"#BBF7D0":"#FECACA",background:factionMsg[0].type==="bonus"?T.gb:T.bb}}>
+        <div style={{...S.lb,fontSize:8,marginBottom:4}}>{factionMsg[0].type==="bonus"?"✓":"⚠"} FACTION CONSEQUENCES</div>
+        {factionMsg.map((m,i) => <div key={i} style={{fontSize:12,color:T.t2,marginBottom:2}}>{m.icon} <strong style={{color:m.color}}>{m.faction}:</strong> {m.msg}</div>)}
+      </div>)}
+      {upcomingChains.length>0&&(<div style={{...S.cd,padding:"8px 12px",marginBottom:10,borderColor:"#FDE68A",background:T.wb}}>
+        <div style={{...S.lb,fontSize:8,color:T.wn}}>⏳ {upcomingChains.length} consequence{upcomingChains.length>1?"s":""} approaching</div>
+      </div>)}
+      {/* FACTION DEMAND */}
+      {factionDemand && (
+        <div style={{...S.cd,padding:"12px 14px",marginBottom:10,borderColor:factionDemand.faction.color+"55",background:factionDemand.faction.color+"08"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+            <div style={{...S.lb,fontSize:9,color:factionDemand.faction.color}}>{factionDemand.faction.icon} FACTION DEMAND</div>
+            <span style={{...S.mn,fontSize:10,color:T.tm}}>{factionDemand.faction.name}</span>
+          </div>
+          <div style={{fontSize:13,color:T.tx,fontWeight:600,marginBottom:4}}>
+            Invest {factionDemand.amount}+ in {POLICIES.find(p=>p.id===factionDemand.policy)?.icon} {POLICIES.find(p=>p.id===factionDemand.policy)?.label} this round
+          </div>
+          <div style={{display:"flex",gap:12,fontSize:11}}>
+            <span style={{color:T.gd}}>✓ {factionDemand.rewardMsg.split(".")[0]}</span>
+            <span style={{color:T.bad}}>✗ {factionDemand.penaltyMsg.split(".")[0]}</span>
+          </div>
+        </div>
+      )}
+      {/* ADVISOR MISSIONS */}
+      {advisorMissions.length > 0 && (
+        <div style={{...S.cd,padding:"10px 14px",marginBottom:10,borderColor:"#C7D2FE",background:"#EFF4FF"}}>
+          <div style={{...S.lb,fontSize:9,color:T.ac,marginBottom:6}}>🎯 ADVISOR MISSIONS THIS ROUND</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+            {advisorMissions.map(m => {
+              const met = (alloc[m.policy]||0) >= m.amount;
+              return (
+                <div key={m.advisor.id} style={{flex:"1 1 140px",background:met?T.gb:T.sf,border:`1px solid ${met?"#BBF7D0":T.bd}`,borderRadius:10,padding:"8px 10px"}}>
+                  <div style={{fontSize:12,fontWeight:600,color:m.advisor.color}}>{m.advisor.avatar} {m.advisor.name}</div>
+                  <div style={{fontSize:11,color:T.tx,marginTop:2}}>{POLICIES.find(p=>p.id===m.policy)?.icon} {m.policyLabel} ≥ {m.amount}</div>
+                  <div style={{fontSize:10,color:T.tm,marginTop:1,fontStyle:"italic"}}>{m.reason}</div>
+                  <div style={{...S.mn,fontSize:10,marginTop:3,color:met?T.gd:T.tm}}>{met?"✓ Met":"○ Not met"}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {/* Metrics with sparklines */}
+      <div style={{...S.cd,padding:"10px 14px",marginBottom:10}}>
+        <div style={{...S.lb,fontSize:8,marginBottom:6}}>NATIONAL METRICS</div>
+        <div style={grd(90)}>
+          {METRICS.map(m => {
+            const hist = metricHistory.map(h => h[m.id]);
+            const col = metrics[m.id]>=60?T.gd:metrics[m.id]>=40?T.wn:T.bad;
+            return (<div key={m.id} style={{textAlign:"center"}}>
+              <div style={{position:"relative",display:"inline-block"}}>
+                <Ring value={metrics[m.id]} color={col}/>
+                <span style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",...S.mn,fontSize:10,fontWeight:600}}>{metrics[m.id]}</span>
+              </div>
+              <Sparkline data={hist} color={col} width={50} height={14}/>
+              <div style={{fontSize:8,color:T.tm,fontFamily:"'JetBrains Mono',monospace"}}>{m.label.slice(0,6)}</div>
+            </div>);
+          })}
+        </div>
+      </div>
+      {tier2Unlocked.length>0&&(<div style={{...S.cd,padding:"8px 12px",marginBottom:10,borderColor:"#BBF7D0",background:T.gb}}>
+        <div style={{...S.lb,fontSize:8,color:T.gd,marginBottom:3}}>🔓 TIER-2 ACTIVE</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:4}}>{tier2Unlocked.map(t=><span key={t.name} style={{...S.mn,fontSize:9,background:"#DCFCE7",border:"1px solid #BBF7D0",borderRadius:6,padding:"2px 6px",color:"#15803D"}}>{t.name}<InfoButton term={t.name}/></span>)}</div>
+      </div>)}
+      <div style={{display:"flex",gap:8,marginBottom:10}}>
+        <button onClick={()=>setShowAdvisors(!showAdvisors)} style={{...S.bt,flex:1,background:T.sa,color:T.t2,border:`1px solid ${T.bd}`,padding:"7px",fontSize:12}}>Advisors</button>
+        <button onClick={()=>setShowFactions(!showFactions)} style={{...S.bt,flex:1,background:T.sa,color:T.t2,border:`1px solid ${T.bd}`,padding:"7px",fontSize:12}}>Factions</button>
+        <button onClick={()=>setShowGlossary(!showGlossary)} style={{...S.bt,flex:1,background:T.sa,color:T.t2,border:`1px solid ${T.bd}`,padding:"7px",fontSize:12}}>📖 Glossary</button>
+      </div>
+      {showAdvisors&&(<div style={{...grd(180),marginBottom:10}}>{ADVISORS.map(a=>{
+        const qp=questProgress[a.id]||0;
+        const mission = advisorMissions.find(m=>m.advisor.id===a.id);
+        const missionMet = mission ? (alloc[mission.policy]||0) >= mission.amount : false;
+        return(<div key={a.id} style={{...S.cd,padding:12,borderColor:a.color+"33"}}>
+          <div style={{fontSize:18}}>{a.avatar}</div>
+          <div style={{fontSize:11,fontWeight:700,color:a.color}}>{a.name}</div>
+          <div style={{...S.lb,fontSize:8,marginBottom:4}}>{a.philosophy}</div>
+          <div style={{fontSize:11,color:T.t2,lineHeight:1.5,marginBottom:6}}>{a.getAdvice(round,metrics,cumulative)}</div>
+          {mission && (
+            <div style={{background:missionMet?T.gb:T.sa,border:`1px solid ${missionMet?"#BBF7D0":T.bd}`,borderRadius:8,padding:"6px 8px",marginBottom:6}}>
+              <div style={{fontSize:10,fontWeight:600,color:missionMet?T.gd:T.tx}}>
+                {missionMet?"✓":"○"} Mission: {POLICIES.find(p=>p.id===mission.policy)?.icon} {mission.policyLabel} ≥ {mission.amount}
+              </div>
+              <div style={{fontSize:9,color:T.tm,fontStyle:"italic"}}>{mission.reason}</div>
+            </div>
+          )}
+          <div style={{...S.mn,fontSize:9,color:qp>=3?T.gd:T.tm}}>Quest: {a.questLabel}</div>
+          <div style={{display:"flex",gap:3,marginTop:3}}>{[0,1,2].map(i=>(
+            <div key={i} style={{flex:1,height:4,borderRadius:2,background:i<qp?a.color:T.bd}}/>
+          ))}</div>
+          {qp>=3&&<div style={{...S.mn,fontSize:9,color:T.gd,marginTop:3}}>✓ Quest complete! +2 trust, +1 innovation/round</div>}
+        </div>);
+      })}</div>)}
+      {showFactions&&(<div style={{...grd(100),marginBottom:10}}>{factions.map(f=>{const s=factionSat[f.id]||50;return(<div key={f.id} style={{...S.cd,padding:10,textAlign:"center"}}><div style={{fontSize:18}}>{f.icon}</div><div style={{fontSize:10,fontWeight:700,color:f.color}}>{f.name}</div><div style={{height:5,background:T.sa,borderRadius:3,overflow:"hidden",marginTop:3,marginBottom:2}}><div style={{height:"100%",width:`${s}%`,background:s>=60?T.gd:s>=40?T.wn:T.bad,borderRadius:2,transition:"width 0.5s"}}/></div><div style={{...S.mn,fontSize:9,color:s>=60?T.gd:s>=40?T.wn:T.bad}}>{s<30?"Hostile":s>=60?"Supportive":s>=40?"Neutral":"Opposed"}</div></div>);})}</div>)}
+      {showGlossary&&(<div style={{...S.cd,marginBottom:10,maxHeight:200,overflowY:"auto",padding:14}}>{Object.entries(GLOSSARY).slice(0,6).map(([k,v])=>(<div key={k} style={{marginBottom:8}}><span style={{...S.mn,fontSize:10,fontWeight:600,color:T.ac}}>{k}</span><span style={{fontSize:11,color:T.t2,marginLeft:6}}>{v.slice(0,80)}…</span></div>))}<div style={{fontSize:10,color:T.tm}}>Full glossary available on intro screen</div></div>)}
+      {/* Policies */}
+      <div style={grd(250)}>
+        {POLICIES.map(p => {
+          const v=alloc[p.id]||0,cv=cumulative[p.id]||0,t2Done=cv>=p.t2.thresh;
+          return (<div key={p.id} style={{...S.cd,padding:12,borderColor:v>0?p.color+"44":T.bd,background:v>0?p.color+"06":T.sf,marginBottom:0}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+              <span style={{fontSize:12,fontWeight:600}}>{p.icon} {p.label}<InfoButton term={p.t2.name}/></span>
+              <span style={{...S.mn,fontSize:16,fontWeight:700,color:v>0?p.color:T.tf}}>{v}</span>
+            </div>
+            <div style={{fontSize:10,color:T.tm,marginBottom:5,lineHeight:1.3}}>{p.desc}</div>
+            <div style={{display:"flex",gap:5,marginBottom:4}}>
+              <button onClick={()=>adjust(p.id,-1)} style={{...S.bt,flex:1,padding:"4px 0",background:T.sa,color:T.t2,fontSize:14,border:`1px solid ${T.bd}`}}>−</button>
+              <button onClick={()=>adjust(p.id,1)} style={{...S.bt,flex:1,padding:"4px 0",background:p.color+"10",color:p.color,fontSize:14,border:`1px solid ${p.color}33`}}>+</button>
+            </div>
+            <div style={{display:"flex",gap:3,justifyContent:"center",marginBottom:2}}>{[0,1,2,3,4,5].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:i<v?p.color:T.bd}}/>)}</div>
+            <div style={{...S.mn,fontSize:8,color:t2Done?T.gd:T.tf,textAlign:"center"}}>{t2Done?`🔓 ${p.t2.name}`:`${cv}/${p.t2.thresh} → ${p.t2.name}`}</div>
+          </div>);
+        })}
+      </div>
+      {activeSynergies.length>0&&(<div style={{...S.cd,padding:"8px 12px",marginTop:10,borderColor:"#BBF7D0",background:T.gb}}>
+        <div style={{display:"flex",flexWrap:"wrap",gap:4}}>{activeSynergies.map(s=><span key={s.label} style={{...S.mn,fontSize:9,background:"#DCFCE7",border:"1px solid #BBF7D0",borderRadius:6,padding:"2px 6px",color:"#15803D"}}>⚡ {s.label}</span>)}</div>
+      </div>)}
+      <div style={{textAlign:"center",marginTop:12}}>
+        <Btn onClick={submitAllocation} disabled={pointsLeft>0}>Commit & Face {year} →</Btn>
+        {pointsLeft>0&&<div style={{...S.mn,fontSize:11,color:T.tf,marginTop:5}}>Allocate all {pointsLeft} points</div>}
+        {pointsLeft<totalPoints&&<button onClick={resetAlloc} style={{...S.bt,background:"transparent",color:T.tm,fontSize:12,marginTop:8,padding:"6px 16px",border:`1px solid ${T.bd}`}}>↺ Reset</button>}
+      </div>
+    </div></div>
+  );
+
+  // ── EVENT with conditional choices ──
+  if (phase === "event") {
+    const evCol = catCol[currentEvent.category]||T.ac;
+    const isChain = !!currentEvent.chainStep;
+    return (<div style={S.pg}><style>{fonts}</style><div ref={topRef}/><div style={{...S.in,paddingTop:32}}>
+      <Timeline round={round}/>
+      {microEvent&&(<div style={{...S.cd,padding:"10px 14px",marginBottom:12,borderColor:"#FDE68A",background:T.wb}}>
+        <div style={{...S.lb,fontSize:8,color:T.wn,marginBottom:3}}>⚡ INTERIM EVENT</div>
+        <div style={{fontSize:12,color:T.t2}}>{microEvent.text}</div>
+      </div>)}
+      {/* Tier-2 unlock alert on event screen */}
+      {newUnlocks.length > 0 && (
+        <div style={{...S.cd,padding:"10px 14px",marginBottom:12,borderColor:"#A78BFA",background:"#F5F3FF"}}>
+          <div style={{...S.lb,fontSize:8,color:"#7C3AED",marginBottom:3}}>🔓 TIER-2 UNLOCKED THIS ROUND</div>
+          {newUnlocks.map(u => (
+            <div key={u.t2.name} style={{fontSize:12,color:T.t2,marginBottom:2}}>
+              {u.policy.icon} <strong style={{color:"#7C3AED"}}>{u.t2.name}</strong> — {Object.entries(u.t2.passive).map(([k,v])=>`+${v} ${METRICS.find(m=>m.id===k)?.label||k}`).join(", ")} per round
+            </div>
+          ))}
+        </div>
+      )}
+      {/* Demand + mission results on event screen */}
+      {demandResult && (
+        <div style={{...S.cd,padding:"8px 14px",marginBottom:10,borderColor:demandResult.met?"#BBF7D0":"#FECACA",background:demandResult.met?T.gb:T.bb}}>
+          <div style={{fontSize:11,color:demandResult.met?T.gd:T.bad}}>{demandResult.met?"✓":"✗"} {demandResult.msg}</div>
+        </div>
+      )}
+      {missionResults.length > 0 && missionResults.some(r=>r.met) && (
+        <div style={{...S.cd,padding:"8px 14px",marginBottom:10,borderColor:"#C7D2FE",background:"#EFF4FF"}}>
+          <div style={{fontSize:11,color:T.ac}}>🎯 Missions: {missionResults.filter(r=>r.met).map(r=>`${r.advisor.avatar} ✓`).join(" ")} {missionResults.filter(r=>!r.met).map(r=>`${r.advisor.avatar} ✗`).join(" ")}</div>
+        </div>
+      )}
+      <div style={{...S.cd,padding:0,marginBottom:16,overflow:"hidden"}}>
+        <div style={{background:evCol,padding:"8px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{...S.mn,fontSize:9,color:"#fff",letterSpacing:"0.2em",textTransform:"uppercase"}}>{currentEvent.category}</span>
+          <span style={{...S.mn,fontSize:9,color:"rgba(255,255,255,0.7)"}}>{year} · {diff.label}</span>
+        </div>
+        {isChain&&(<div style={{background:"#FEF3C7",padding:"6px 16px",borderBottom:`1px solid ${T.bd}`}}>
+          <span style={{...S.mn,fontSize:10,color:"#92400E"}}>🔗 CHAIN EVENT — consequence of an earlier decision</span>
+        </div>)}
+        <div style={{padding:"24px 20px 16px",textAlign:"center"}}>
+          <h2 style={{...S.hl,fontSize:30,marginBottom:6}}>{currentEvent.title}</h2>
+          <p style={{fontSize:14,color:T.t2,maxWidth:500,margin:"0 auto",fontStyle:"italic"}}>{currentEvent.subtitle}</p>
+        </div>
+        <div style={{borderTop:`1px solid ${T.bd}`,padding:"12px 20px",background:T.sa}}>
+          <button onClick={()=>setShowHist(!showHist)} style={{...S.bt,padding:0,background:"transparent",color:T.tm,fontSize:11}}>
+            📜 {showHist?"Hide":"Show"} Historical Parallel: {currentEvent.hist?.title}
+          </button>
+          {showHist&&currentEvent.hist&&(<div style={{marginTop:8}}><div style={{...S.mn,fontSize:9,color:evCol,marginBottom:3}}>{currentEvent.hist.era}</div><div style={{fontSize:12,color:T.t2,lineHeight:1.6}}>{currentEvent.hist.text}</div></div>)}
+        </div>
+      </div>
+      <div style={{...S.cd,padding:"8px 12px",marginBottom:14}}>
+        <div style={{...S.lb,fontSize:8,marginBottom:5}}>YOUR BUDGET</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+          {POLICIES.filter(p=>(alloc[p.id]||0)>0).map(p=><span key={p.id} style={{...S.mn,fontSize:10,background:p.color+"10",border:`1px solid ${p.color}33`,borderRadius:6,padding:"2px 7px",color:p.color}}>{p.icon}{p.short}:{alloc[p.id]}</span>)}
+        </div>
+      </div>
+      <div style={{...S.lb,fontSize:9,marginBottom:8,textAlign:"center"}}>CHOOSE YOUR RESPONSE</div>
+      <div style={grd(240)}>
+        {currentEvent.choices.map((c,i) => {
+          const available = isChoiceAvailable(c);
+          const isSelected = choiceIdx === i;
+          return (<button key={i} onClick={() => available && setChoiceIdx(i)} style={{
+            ...S.cd,padding:18,cursor:available?"pointer":"not-allowed",textAlign:"left",
+            borderColor:isSelected?evCol:!available?"#FECACA":T.bd,
+            background:isSelected?evCol+"08":!available?"#FEF2F210":T.sf,
+            opacity:available?1:0.7,boxShadow:isSelected?`0 0 0 2px ${evCol}22`:S.cd.boxShadow,
+            transition:"all 0.2s",marginBottom:0,
+          }}>
+            <div style={{fontSize:24,marginBottom:6}}>{c.icon}</div>
+            <div style={{fontSize:14,fontWeight:700,color:available?T.tx:T.tm,marginBottom:3}}>{c.label}</div>
+            <div style={{fontSize:12,color:T.t2,lineHeight:1.5}}>{c.desc}</div>
+            {/* PHASE 4: locked choice explanation */}
+            {!available && c.requires && (
+              <div style={{...S.mn,fontSize:10,color:T.bad,marginTop:8,padding:"6px 8px",background:T.bb,borderRadius:6,border:"1px solid #FECACA"}}>
+                🔒 {c.requires.lockedMsg}
+                <InfoButton term={c.requires.policy==="safety"?"ASL-4":c.requires.policy==="governance"?"CAISI":""}/>
+              </div>
+            )}
+            {c.chainTrigger&&available&&<div style={{...S.mn,fontSize:9,color:T.wn,marginTop:6}}>⏳ This choice will have consequences</div>}
+          </button>);
+        })}
+      </div>
+      <div style={{textAlign:"center",marginTop:16}}><Btn onClick={resolveEvent} disabled={choiceIdx===null||!isChoiceAvailable(currentEvent.choices[choiceIdx])} color={evCol}>Resolve →</Btn></div>
+    </div></div>);
+  }
+
+  // ── SUMMARY ──
+  if (phase === "summary") {
+    const isGood = result.isGood;
+    return (<div style={S.pg}><style>{fonts}</style><div ref={topRef}/><div style={S.in}>
+      <div style={{...S.lb,marginBottom:3}}>YEAR {year} OUTCOME · {diff.label.toUpperCase()}</div>
+      <h2 style={{...S.hl,fontSize:24,marginBottom:3}}>{currentEvent.title}</h2>
+      <div style={{fontSize:12,color:T.tm,marginBottom:10}}>
+        Chose: <strong style={{color:T.tx}}>{result.choiceLabel}</strong>
+        {result.tm!==1&&<span style={{...S.mn,fontSize:10,marginLeft:8,color:result.tm>1?T.gd:T.bad}}>Trust ×{result.tm.toFixed(2)}</span>}
+        {result.isChain&&<span style={{...S.mn,fontSize:10,marginLeft:8,color:T.wn}}>🔗 Chain</span>}
+      </div>
+      <div style={{...S.cd,marginBottom:12,borderColor:isGood?"#BBF7D0":isGood===false?"#FECACA":T.bd,background:isGood?T.gb:isGood===false?T.bb:T.sf}}>
+        <p style={{fontSize:14,lineHeight:1.75,margin:0,color:T.t2}}>{result.narrative}</p>
+      </div>
+      {/* Faction consequences */}
+      {factionMsg.length>0&&(<div style={{...S.cd,padding:"8px 12px",marginBottom:10}}>
+        <div style={{...S.lb,fontSize:8,marginBottom:4}}>FACTION EFFECTS THIS ROUND</div>
+        {factionMsg.map((m,i)=><div key={i} style={{fontSize:12,color:m.type==="bonus"?T.gd:T.bad,marginBottom:2}}>{m.icon} {m.msg} ({Object.entries(m.fx).map(([k,v])=>`${v>0?"+":""}${v} ${k}`).join(", ")})</div>)}
+      </div>)}
+      {/* DEMAND RESULT */}
+      {demandResult && (
+        <div style={{...S.cd,padding:"10px 14px",marginBottom:10,borderColor:demandResult.met?"#BBF7D0":"#FECACA",background:demandResult.met?T.gb:T.bb}}>
+          <div style={{...S.lb,fontSize:8,marginBottom:3,color:demandResult.met?T.gd:T.bad}}>{demandResult.met?"✓ DEMAND MET":"✗ DEMAND IGNORED"}</div>
+          <div style={{fontSize:12,color:T.t2}}>{demandResult.msg}</div>
+          <div style={{...S.mn,fontSize:10,color:demandResult.color,marginTop:3}}>{Object.entries(demandResult.fx).map(([k,v])=>`${v>0?"+":""}${v} ${METRICS.find(m=>m.id===k)?.label||k}`).join(", ")}</div>
+        </div>
+      )}
+      {/* MISSION RESULTS */}
+      {missionResults.length > 0 && (
+        <div style={{...S.cd,padding:"10px 14px",marginBottom:10,borderColor:"#C7D2FE",background:"#EFF4FF"}}>
+          <div style={{...S.lb,fontSize:8,marginBottom:4,color:T.ac}}>🎯 ADVISOR MISSION RESULTS</div>
+          {missionResults.map(mr => (
+            <div key={mr.advisor.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+              <span style={{fontSize:14}}>{mr.advisor.avatar}</span>
+              <span style={{fontSize:12,fontWeight:600,color:mr.advisor.color}}>{mr.advisor.name}</span>
+              <span style={{fontSize:11,color:T.t2}}>{mr.policy} ≥ 2:</span>
+              <span style={{...S.mn,fontSize:11,fontWeight:600,color:mr.met?T.gd:T.bad}}>{mr.met?"✓ Complete":"✗ Failed"}</span>
+              {mr.met && <span style={{...S.mn,fontSize:10,color:T.gd}}>→ Quest {questProgress[mr.advisor.id]||0}/3</span>}
+            </div>
+          ))}
+          {missionResults.filter(r=>r.met).length === 3 && (
+            <div style={{...S.mn,fontSize:11,color:"#7C3AED",marginTop:4,fontWeight:600}}>🌟 All 3 missions complete! Perfect advisory round.</div>
+          )}
+        </div>
+      )}
+      {/* NEW TIER-2 UNLOCK NOTIFICATION */}
+      {newUnlocks.length > 0 && (
+        <div style={{...S.cd,padding:"16px 16px",marginBottom:12,borderColor:"#A78BFA",background:"linear-gradient(135deg, #F5F3FF, #EDE9FE)",border:"2px solid #A78BFA",borderRadius:16}}>
+          <div style={{textAlign:"center",marginBottom:10}}>
+            <div style={{fontSize:28,marginBottom:4}}>🔓</div>
+            <div style={{...S.lb,fontSize:10,color:"#7C3AED",letterSpacing:"0.3em"}}>TIER-2 UNLOCKED</div>
+          </div>
+          {newUnlocks.map(u => (
+            <div key={u.t2.name} style={{background:"#FFFFFF",borderRadius:12,padding:14,marginBottom:newUnlocks.length>1?8:0,border:`1px solid #DDD6FE`}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                <span style={{fontSize:20}}>{u.policy.icon}</span>
+                <div>
+                  <div style={{fontSize:15,fontWeight:700,color:"#7C3AED"}}>{u.t2.name}</div>
+                  <div style={{...S.mn,fontSize:10,color:T.tm}}>{u.policy.label} · Lifetime investment: {cumulative[u.policy.id]||0}</div>
+                </div>
+              </div>
+              <div style={{fontSize:13,color:T.t2,lineHeight:1.6,marginBottom:8}}>{u.t2.info}</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                <span style={{...S.mn,fontSize:11,fontWeight:600,color:"#7C3AED"}}>Passive bonus every round:</span>
+                {Object.entries(u.t2.passive).map(([k,v]) => (
+                  <span key={k} style={{...S.mn,fontSize:11,background:"#EDE9FE",borderRadius:6,padding:"2px 8px",color:"#6D28D9"}}>+{v} {METRICS.find(m=>m.id===k)?.label||k}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {(activeSynergies.length>0||tier2Unlocked.length>0)&&(<div style={{...S.cd,padding:"8px 12px",marginBottom:10,borderColor:"#BBF7D0",background:T.gb}}>
+        {activeSynergies.map(s=><div key={s.label} style={{...S.mn,fontSize:10,color:"#15803D",marginBottom:1}}>⚡ {s.label}: {Object.entries(s.bonus).map(([k,v])=>`+${v} ${k}`).join(", ")}</div>)}
+        {tier2Unlocked.map(t=><div key={t.name} style={{...S.mn,fontSize:10,color:"#15803D",marginBottom:1}}>🔓 {t.name}</div>)}
+        {ADVISORS.filter(a=>questProgress[a.id]>=3).map(a=><div key={a.id} style={{...S.mn,fontSize:10,color:"#15803D"}}>🎯 {a.questLabel}: +2 trust, +1 innovation</div>)}
+      </div>)}
+      <div style={{...S.cd,marginBottom:12}}>
+        <div style={{...S.lb,fontSize:8,marginBottom:8}}>METRICS</div>
+        {METRICS.map(m=><MetricBar key={m.id} metric={m} value={metrics[m.id]} prev={prevMetrics[m.id]} history={metricHistory.map(h=>h[m.id])}/>)}
+      </div>
+      {bonusPoints>0&&(<div style={{...S.cd,padding:"8px 12px",marginBottom:12,borderColor:"#C7D2FE",background:"#EFF4FF",textAlign:"center"}}>
+        <span style={{fontSize:13,color:T.ac}}>📈 +{bonusPoints} bonus points next year</span>
+      </div>)}
+      <div style={{textAlign:"center"}}><Btn onClick={nextRound}>{round+1>=ROUNDS?"Final Assessment →":`Proceed to ${year+1} →`}</Btn></div>
+    </div></div>);
+  }
+
+  // ── END with shareable card ──
+  if (phase === "end") {
+    const avg = Math.round(Object.values(metrics).reduce((a,b)=>a+b,0)/METRICS.length);
+    const gc = grade.grade==="A"?T.gd:grade.grade==="B"?T.ac:grade.grade==="C"?T.wn:T.bad;
+    const sorted = [...POLICIES].sort((a,b)=>(cumulative[b.id]||0)-(cumulative[a.id]||0));
+    const narrative = endNarrative(metrics, cumulative, history);
+    const chainCount = history.filter(h=>h.isChain).length;
+    const questsDone = ADVISORS.filter(a=>questProgress[a.id]>=3);
+
+    return (<div style={S.pg}><style>{fonts}</style><div ref={topRef}/><div style={{...S.in,paddingTop:40,textAlign:"center"}}>
+
+      {/* PHASE 4: Shareable end card */}
+      <div style={{background:`linear-gradient(135deg, ${gc}08, ${gc}15)`,border:`2px solid ${gc}33`,borderRadius:20,padding:"28px 24px 20px",marginBottom:20,maxWidth:520,marginLeft:"auto",marginRight:"auto"}}>
+        <div style={{...S.lb,color:gc,marginBottom:6,letterSpacing:"0.35em"}}>THE INTELLIGENCE AGE · {diff.label.toUpperCase()}</div>
+        <div style={{fontFamily:"'Newsreader',serif",fontSize:80,fontWeight:900,color:gc,lineHeight:1}}>{grade.grade}</div>
+        <h2 style={{...S.hl,fontSize:24,marginBottom:4}}>{grade.title}</h2>
+        <p style={{fontSize:13,color:T.t2,marginBottom:12}}>{grade.sub}</p>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
+          <div><div style={{...S.mn,fontSize:18,fontWeight:700,color:gc}}>{avg}</div><div style={{fontSize:8,color:T.tm}}>AVG</div></div>
+          <div><div style={{...S.mn,fontSize:18,fontWeight:700,color:T.wn}}>{chainCount}</div><div style={{fontSize:8,color:T.tm}}>CHAINS</div></div>
+          <div><div style={{...S.mn,fontSize:18,fontWeight:700,color:T.gd}}>{questsDone.length}/3</div><div style={{fontSize:8,color:T.tm}}>QUESTS</div></div>
+          <div><div style={{...S.mn,fontSize:18,fontWeight:700,color:T.ac}}>{tier2Unlocked.length}</div><div style={{fontSize:8,color:T.tm}}>UNLOCKS</div></div>
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:4,marginTop:10}}>
+          {sorted.slice(0,5).map(p=><span key={p.id} style={{...S.mn,fontSize:9,color:p.color}}>{p.icon}{cumulative[p.id]||0}</span>)}
+        </div>
+      </div>
+
+      {/* Narrative */}
+      <div style={{...S.cd,marginBottom:14,textAlign:"left"}}>
+        <div style={{...S.lb,fontSize:8,marginBottom:6}}>YOUR STORY</div>
+        <p style={{fontSize:13,color:T.t2,lineHeight:1.75,margin:0}}>{narrative}</p>
+      </div>
+
+      {/* Final metrics with sparklines */}
+      <div style={{...S.cd,marginBottom:14,textAlign:"left"}}>
+        <div style={{...S.lb,fontSize:8,marginBottom:8}}>FINAL METRICS</div>
+        {METRICS.map(m=><MetricBar key={m.id} metric={m} value={metrics[m.id]} prev={metrics[m.id]} history={metricHistory.map(h=>h[m.id])}/>)}
+      </div>
+
+      <div style={{...S.cd,marginBottom:14,textAlign:"left"}}>
+        <div style={{...S.lb,fontSize:8,marginBottom:6}}>LIFETIME INVESTMENT</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{sorted.map(p=>{const t2=(cumulative[p.id]||0)>=p.t2.thresh;return(<span key={p.id} style={{...S.mn,fontSize:10,background:p.color+"10",border:`1px solid ${p.color}33`,borderRadius:6,padding:"2px 8px",color:p.color}}>{t2?"🔓 ":""}{p.icon} {p.label}: {cumulative[p.id]||0}</span>);})}</div>
+      </div>
+
+      <div style={{...S.cd,marginBottom:14,textAlign:"left"}}>
+        <div style={{...S.lb,fontSize:8,marginBottom:6}}>FACTIONS</div>
+        <div style={grd(80)}>{FACTIONS.map(f=>{const s=factionSat[f.id]||50;return(<div key={f.id} style={{textAlign:"center"}}><div style={{fontSize:18}}>{f.icon}</div><div style={{fontSize:10,fontWeight:700,color:f.color}}>{f.name}</div><div style={{...S.mn,fontSize:12,color:s>=60?T.gd:s>=40?T.wn:T.bad,fontWeight:600}}>{Math.round(s)}</div></div>);})}</div>
+      </div>
+
+      <div style={{...S.cd,marginBottom:16,textAlign:"left",maxHeight:280,overflowY:"auto"}}>
+        <div style={{...S.lb,fontSize:8,marginBottom:8}}>TIMELINE</div>
+        {history.map((h,i)=>(<div key={i} style={{marginBottom:12,paddingBottom:12,borderBottom:i<history.length-1?`1px solid ${T.bd}`:"none"}}>
+          <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:4}}>
+            <span style={{...S.mn,fontSize:11,fontWeight:600,color:catCol[h.category]||T.ac}}>{h.year} — {h.eventTitle}</span>
+            <span style={{...S.mn,fontSize:9,color:T.tm}}>{h.choiceLabel}</span>
+          </div>
+          {h.isChain&&<div style={{...S.mn,fontSize:9,color:T.wn,marginTop:1}}>🔗 Chain event</div>}
+          {h.microText&&<div style={{fontSize:11,color:T.wn,marginTop:1}}>⚡ {h.microText}</div>}
+          <div style={{fontSize:12,color:T.t2,lineHeight:1.5,marginTop:2}}>{h.narrative}</div>
+          {h.factionMsgs?.length>0&&h.factionMsgs.map((m,j)=><div key={j} style={{...S.mn,fontSize:9,color:m.type==="bonus"?T.gd:T.bad,marginTop:1}}>{m.icon} {m.msg}</div>)}
+          {h.synergies?.length>0&&<div style={{...S.mn,fontSize:9,color:T.gd,marginTop:1}}>⚡ {h.synergies.join(", ")}</div>}
+        </div>))}
+      </div>
+
+      <Btn onClick={restart} color={gc}>Play Again →</Btn>
+      <div style={{...S.mn,marginTop:14,fontSize:10,color:T.tf}}>Based on OpenAI · Anthropic RSP · WEF · White House AI Action Plan</div>
+    </div></div>);
+  }
+  return null;
+}
