@@ -385,9 +385,9 @@ const EVENTS = [
       fx:()=>({growth:2,equality:1,trust:3,safety_score:3,innovation:-2,wellbeing:1,geopolitics:-1,good:null,narrative:"Drugs eventually approved. But patients who could have been saved waited years."})},
   ]),
   mkE("Retail Automation Wave","AI agents and robots replace 2M retail workers in 6 months","ECONOMY",[
-    {label:"Consumer AI dividend",desc:"Savings from automation shared via lower prices + worker fund",icon:"💰",
+    {label:"Consumer AI dividend",desc:"Savings from automation shared via lower prices + worker fund",icon:"💰",chainTrigger:"retail_care",
       fx:(a)=>({growth:4,equality:a.wealth>=2?6:-2,trust:a.workers>=1?4:-3,safety_score:0,innovation:3,wellbeing:a.nets>=2?4:-5,geopolitics:0,good:a.nets>=1&&a.wealth>=1,narrative:(a.nets>=2&&a.wealth>=2)?"Prices drop. Worker fund cushions transition. Consumer spending rises.":"Prices drop for consumers. But 2M workers with no safety net. Food bank lines lengthen."})},
-    {label:"Slow the rollout",desc:"Require 2-year notice before AI replacement",icon:"⏸",
+    {label:"Slow the rollout",desc:"Require 2-year notice before AI replacement",icon:"⏸",chainTrigger:"retail_collapse",
       fx:()=>({growth:-4,equality:2,trust:3,safety_score:0,innovation:-3,wellbeing:3,geopolitics:-1,good:null,narrative:"Breathing room. But companies accelerate offshore AI deployment instead."})},
   ]),
   // ── NEW EVENTS: GEOPOLITICS ──
@@ -452,6 +452,56 @@ const EVENTS = [
     {label:"Strategic reserve",desc:"Stockpile materials, restrict exports",icon:"🏛",
       fx:()=>({growth:4,equality:-1,trust:-2,safety_score:1,innovation:2,wellbeing:0,geopolitics:-4,good:false,narrative:"Strategic advantage secured. But restricted access slows global adoption. Allies develop alternatives."})},
   ]),
+  // ═══ ADDITIONAL EVENTS ═══
+  mkE("Financial Flash Crash","AI trading systems cause $8T flash crash in 90 seconds","SAFETY",[
+    {label:"Mandatory circuit breakers",desc:"Require human-in-the-loop for high-frequency AI trades",icon:"⚖",
+      fx:(a)=>({growth:-3,equality:2,trust:a.governance>=2?6:1,safety_score:4,innovation:-3,wellbeing:2,geopolitics:0,good:a.governance>=1,narrative:a.governance>=2?"Audit infrastructure catches cascading failures. Markets stabilise within hours.":"Circuit breakers help. But the underlying fragility remains."})},
+    {label:"Industry self-regulation",desc:"Let exchanges set their own AI trading rules",icon:"🏦",
+      fx:()=>({growth:3,equality:-4,trust:-6,safety_score:-3,innovation:2,wellbeing:-3,geopolitics:-2,good:false,narrative:"Exchanges write weak rules. Retail investors wiped out. Trust in markets plummets."})},
+  ]),
+  mkE("Remote Work AI Revolution","AI makes remote work 3x more productive — urban economies reel","LABOUR",[
+    {label:"Invest in distributed infrastructure",desc:"Fund rural AI hubs, broadband, co-working",icon:"🌐",
+      fx:(a)=>({growth:a.grid>=2?6:2,equality:6,trust:3,safety_score:0,innovation:4,wellbeing:5,geopolitics:0,good:a.grid>=1,narrative:a.grid>=2?"Rural renaissance. Small towns become AI innovation clusters.":"Investment helps but infrastructure gaps remain."})},
+    {label:"Protect urban tax base",desc:"Incentivise return-to-office in major metros",icon:"🏢",
+      fx:()=>({growth:2,equality:-4,trust:-3,safety_score:0,innovation:-2,wellbeing:-4,geopolitics:0,good:false,narrative:"Cities stabilise temporarily. Workers resentful. Brain drain to remote-friendly states."})},
+  ]),
+  mkE("Water Crisis","AI data centres consuming 10% of regional water supply — drought worsens","INFRASTRUCTURE",[
+    {label:"Mandate closed-loop cooling",desc:"Require water-recycling systems in all data centres",icon:"💧",
+      fx:(a)=>({growth:a.grid>=2?3:-3,equality:3,trust:a.grid>=2?6:1,safety_score:0,innovation:-1,wellbeing:5,geopolitics:0,good:a.grid>=1,narrative:a.grid>=2?"Clean Grid standards already included water efficiency. Transition smooth.":"Retrofit costs stagger the industry. 18-month compliance timeline."})},
+    {label:"Relocate to water-rich regions",desc:"Move data centres, accept latency costs",icon:"🏔",
+      fx:()=>({growth:-4,equality:1,trust:2,safety_score:0,innovation:-2,wellbeing:3,geopolitics:0,good:null,narrative:"Migration begins. Latency costs real. But communities keep their water."})},
+  ]),
+  mkE("Nuclear AI Partnership","Energy firms propose small modular reactors dedicated to AI data centres","INFRASTRUCTURE",[
+    {label:"Fast-track approval",desc:"Streamlined permitting for AI-dedicated nuclear",icon:"⚡",
+      fx:(a)=>({growth:a.grid>=2?8:4,equality:1,trust:a.grid>=2?4:-2,safety_score:0,innovation:5,wellbeing:a.grid>=1?2:-2,geopolitics:3,good:a.grid>=1,narrative:a.grid>=2?"Clean AI Grid framework absorbs nuclear smoothly. Energy costs drop. Emissions plummet.":"Nuclear approved. NIMBYism fierce. Construction begins amid protests."})},
+    {label:"Renewable-only mandate",desc:"Only approve solar, wind, and storage for AI",icon:"🌱",
+      fx:()=>({growth:-2,equality:2,trust:4,safety_score:0,innovation:-1,wellbeing:3,geopolitics:1,good:null,narrative:"Clean but slower. Renewable buildout takes longer. Energy constraints limit AI growth near-term."})},
+  ]),
+  mkE("Data Privacy AI Breakthrough","AI can now reconstruct private data from anonymised datasets","GOVERNANCE",[
+    {label:"Emergency privacy standards",desc:"Ban re-identification, mandate differential privacy",icon:"🔒",
+      fx:(a)=>({growth:-3,equality:3,trust:a.governance>=2?8:3,safety_score:3,innovation:-2,wellbeing:4,geopolitics:1,good:a.governance>=1,narrative:a.governance>=2?"Strong privacy framework. Public data confidence holds. Research adapts.":"Standards pass but existing datasets already compromised."})},
+    {label:"Research-first approach",desc:"Study the problem before regulating",icon:"🔬",
+      fx:()=>({growth:2,equality:-3,trust:-7,safety_score:-2,innovation:3,wellbeing:-4,geopolitics:-1,good:false,narrative:"Breaches multiply while committees deliberate. Medical and financial records exposed."})},
+  ]),
+  mkE("Quantum AI Convergence","Quantum computing dramatically accelerates AI capabilities","SCIENCE",[
+    {label:"International quantum safety framework",desc:"Pre-emptive governance before capabilities arrive",icon:"🌐",
+      fx:(a)=>({growth:-2,equality:1,trust:4,safety_score:a.safety>=2?8:2,innovation:a.science>=2?6:1,wellbeing:1,geopolitics:a.intl>=1?6:0,good:a.safety>=1,narrative:a.safety>=2?"Governance ready before capabilities arrive. Historic — first time humanity got ahead of the curve.":"Framework drafted but untested. Capabilities may outpace governance."})},
+    {label:"Race to quantum AI",desc:"Maximise capabilities first, govern later",icon:"🚀",
+      fx:()=>({growth:8,equality:-2,trust:-4,safety_score:-6,innovation:10,wellbeing:-2,geopolitics:4,good:false,narrative:"Breakthrough after breakthrough. But safety completely outpaced. Building god without guardrails."})},
+  ]),
+  // ═══ NEW CHAIN EVENTS ═══
+  mkE("The Care Economy","Two years after retail automation — is the care pivot working?","LABOUR",[
+    {label:"Expand and formalise",desc:"Care work becomes a professional career path",icon:"❤",
+      fx:(a,c)=>({growth:3,equality:c.nets>6?8:3,trust:5,safety_score:0,innovation:2,wellbeing:c.workers>4?10:5,geopolitics:1,good:c.nets>4,narrative:c.nets>6?"Care economy becomes 15% of GDP. Workers have careers, not just jobs.":"Care work expanding but wages still lag."})},
+    {label:"Automate care too",desc:"AI companions and robotic care workers",icon:"🤖",
+      fx:()=>({growth:5,equality:-3,trust:-4,safety_score:-1,innovation:4,wellbeing:-6,geopolitics:0,good:false,narrative:"AI companions in nursing homes. Cost savings enormous. Human touch vanishes."})},
+  ],HIST.LABOUR,"retail_care",3),
+  mkE("Retail Desert","Strip malls empty. Small towns lose their last stores.","ECONOMY",[
+    {label:"AI delivery infrastructure",desc:"Autonomous delivery networks for underserved areas",icon:"🚚",
+      fx:(a)=>({growth:3,equality:a.access>=1?5:1,trust:3,safety_score:0,innovation:4,wellbeing:a.nets>=1?4:0,geopolitics:0,good:a.access>=1,narrative:a.access>=1?"Delivery drones reach every zip code. Access restored digitally.":"Urban areas served. Rural still waiting."})},
+    {label:"Accept the new normal",desc:"Online-only is the future",icon:"📱",
+      fx:()=>({growth:2,equality:-5,trust:-3,safety_score:0,innovation:2,wellbeing:-4,geopolitics:0,good:false,narrative:"Digital divide becomes physical divide. Elderly and low-income cut off."})},
+  ],HIST.ECONOMY,"retail_collapse",3),
   // ── NEW: SUPERINTELLIGENCE PRECURSOR ──
   mkE("The Alignment Test","Researchers propose a definitive test: can a superintelligent system be reliably aligned?","SUPERINTELLIGENCE",[
     {label:"Run the test publicly",desc:"Transparent evaluation with international observers",icon:"🔬",
@@ -485,11 +535,13 @@ const EVENT_ERAS = {
   // Labour
   "The 4-Day Week Vote":"early","White-Collar Displacement":"early","Gig Economy AI Expansion":"mid",
   "Creative Industries Upheaval":"mid","Teacher AI Backlash":"mid","Union AI Bargaining Rights":"late",
+  "Remote Work AI Revolution":"early",
   // Safety
   "Autonomous Weapons Leak":"mid","Model Self-Replication":"late","Medical AI Malpractice":"mid",
+  "Financial Flash Crash":"mid",
   // Governance
   "Supreme Court AI Ruling":"mid","AI Lobbying Scandal":"mid","Algorithmic Bias Class Action":"early",
-  "Open-Source Model Rights":"late","State Regulatory Patchwork":"early",
+  "Open-Source Model Rights":"late","State Regulatory Patchwork":"early","Data Privacy AI Breakthrough":"mid",
   // Economy
   "AI Monopoly Antitrust":"mid","Housing Market AI Disruption":"early","Agricultural AI Revolution":"mid",
   "Pharmaceutical AI Breakthrough":"late","Retail Automation Wave":"early",
@@ -497,7 +549,10 @@ const EVENT_ERAS = {
   "AI Arms Race Escalation":"late","Developing Nation AI Leapfrog":"mid","Cross-Border Data Flow Treaty":"late",
   "AI Espionage Scandal":"mid","Global South AI Coalition":"late","Allied Chip Export Crisis":"early",
   // Science
-  "Fusion-AI Breakthrough":"late","AI Weather Prediction":"early","Protein Folding Cascade":"mid","AI Materials Discovery":"mid",
+  "Fusion-AI Breakthrough":"late","AI Weather Prediction":"early","Protein Folding Cascade":"mid",
+  "AI Materials Discovery":"mid","Quantum AI Convergence":"late",
+  // Infrastructure
+  "Water Crisis":"mid","Nuclear AI Partnership":"late",
   // Superintelligence
   "The Alignment Test":"late",
 };
