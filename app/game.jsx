@@ -10,6 +10,50 @@ import { useState, useEffect, useMemo, useRef } from "react";
 const ROUNDS = 8;
 const clamp = (v,lo=0,hi=100) => Math.max(lo,Math.min(hi,v));
 
+// ── SEEDED PRNG (Mulberry32) for weekly challenges ──
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function getWeeklySeed() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  const week = Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7);
+  return now.getFullYear() * 100 + week;
+}
+function getWeekLabel(seed) {
+  const y = Math.floor(seed / 100), w = seed % 100;
+  return `Week ${w}, ${y}`;
+}
+
+// ── COUNTRIES ──
+const COUNTRIES = [
+  {id:"us",label:"United States",flag:"🇺🇸",desc:"Tech superpower. High innovation, low equality. Polarised politics make trust fragile.",
+    start:{growth:60,equality:35,trust:40,safety_score:55,innovation:65,wellbeing:40,geopolitics:60},
+    modifiers:{grid:1.3,science:1.2,safety:1.1,workers:0.8,nets:0.7,wealth:0.7},
+    flavour:"Silicon Valley leads but Main Street falls behind."},
+  {id:"eu",label:"European Union",flag:"🇪🇺",desc:"Regulatory leader. Strong safety nets and governance but slower innovation. 27 nations must agree.",
+    start:{growth:45,equality:60,trust:55,safety_score:50,innovation:40,wellbeing:60,geopolitics:55},
+    modifiers:{governance:1.3,nets:1.3,workers:1.2,grid:0.8,science:0.9,access:0.9},
+    flavour:"GDPR prepared the ground. Now the hard part — competing and protecting simultaneously."},
+  {id:"cn",label:"China",flag:"🇨🇳",desc:"State-directed AI. Massive scale, high growth, but governance and trust are opaque. International standing contested.",
+    start:{growth:65,equality:40,trust:30,safety_score:45,innovation:60,wellbeing:35,geopolitics:45},
+    modifiers:{grid:1.4,science:1.3,intl:0.6,governance:0.6,workers:0.5,access:0.7},
+    flavour:"The Five Year Plan includes AI supremacy. But at what cost?"},
+  {id:"in",label:"India",flag:"🇮🇳",desc:"Demographic dividend meets digital leapfrog. Massive potential, infrastructure gaps. Can 1.4B people share the gains?",
+    start:{growth:50,equality:30,trust:45,safety_score:35,innovation:45,wellbeing:30,geopolitics:40},
+    modifiers:{access:1.4,nets:1.2,grid:1.3,wealth:1.1,safety:0.8,intl:0.9},
+    flavour:"Aadhaar connected a billion. AI could liberate — or concentrate — everything."},
+  {id:"coalition",label:"Global South Coalition",flag:"🌍",desc:"40 nations. Low starting position but collective leverage. AI leapfrog or left behind?",
+    start:{growth:35,equality:25,trust:50,safety_score:30,innovation:30,wellbeing:25,geopolitics:35},
+    modifiers:{access:1.5,intl:1.4,wealth:1.3,nets:1.2,science:0.7,safety:0.7,grid:0.8},
+    flavour:"The world built for others. This time, build for yourselves."},
+];
+
 // ── DIFFICULTY ──
 const DIFFICULTIES = [
   {id:"easy",label:"Accessible",pts:12,microChance:0.2,feedbackMult:0.6,desc:"More breathing room. Learn the systems."},
@@ -556,12 +600,12 @@ const EVENT_ERAS = {
   // Superintelligence
   "The Alignment Test":"late",
 };
-function pickWeightedEvent(pool, round) {
+function pickWeightedEvent(pool, round, rFn) {
   const era = round <= 2 ? "early" : round <= 5 ? "mid" : "late";
   // Weight matching-era events 3x, others 1x
   const weighted = pool.map(e => ({e, w: (EVENT_ERAS[e.title] === era) ? 3 : (EVENT_ERAS[e.title] === "any" || !EVENT_ERAS[e.title]) ? 1.5 : 1}));
   const total = weighted.reduce((s, w) => s + w.w, 0);
-  let r = Math.random() * total;
+  let r = rFn() * total;
   for (const {e, w} of weighted) { r -= w; if (r <= 0) return e; }
   return weighted[weighted.length - 1].e;
 }
@@ -774,6 +818,9 @@ function InfoButton({term}) {
 export default function Phase4() {
   const [phase, setPhase] = useState("intro");
   const [difficulty, setDifficulty] = useState(null);
+  const [country, setCountry] = useState(null); // country selection
+  const [weeklyMode, setWeeklyMode] = useState(false); // weekly challenge mode
+  const [rng, setRng] = useState(null); // seeded PRNG for weekly mode
   const [round, setRound] = useState(0);
   const [metrics, setMetrics] = useState({...INIT});
   const [prevMetrics, setPrevMetrics] = useState({...INIT});
@@ -807,11 +854,25 @@ export default function Phase4() {
   const [advisorMissions, setAdvisorMissions] = useState([]); // [{advisor, policy, amount, rewardFx, desc}]
   const [missionResults, setMissionResults] = useState([]); // [{advisor, met, desc}]
   const topRef = useRef(null);
+  const rngRef = useRef(null); // seeded PRNG ref for weekly mode
+
+  // Deterministic random for weekly mode, Math.random otherwise
+  const rand = () => (weeklyMode && rngRef.current) ? rngRef.current() : Math.random();
 
   const diff = difficulty ? DIFFICULTIES.find(d=>d.id===difficulty) : DIFFICULTIES[1];
+  const cty = country ? COUNTRIES.find(c=>c.id===country) : null;
+  const startMetrics = cty ? {...cty.start} : {...INIT};
   const basePts = diff.pts;
   const totalPoints = basePts + bonusPoints;
   const year = 2026 + round;
+
+  // Apply country modifiers to an allocation for event effects
+  const applyCountryMods = (al) => {
+    if (!cty) return al;
+    const modded = {};
+    Object.entries(al).forEach(([k,v]) => { modded[k] = v * (cty.modifiers[k] || 1); });
+    return modded;
+  };
 
   useEffect(() => { topRef.current?.scrollIntoView({behavior:"smooth"}); }, [phase]);
 
@@ -848,7 +909,7 @@ export default function Phase4() {
   };
 
   // Generate faction demand for a round
-  const generateDemand = (rd, mets, fSat) => {
+  const generateDemand = (rd, mets, fSat, rFn) => {
     const demands = [
       {fid:"tech",policies:["grid","science","access"],
         templates:[
@@ -878,13 +939,13 @@ export default function Phase4() {
     // Pick faction with lowest satisfaction (most likely to make demands)
     const sorted = [...demands].sort((a,b) => (fSat[a.fid]||50) - (fSat[b.fid]||50));
     const pick = sorted[rd % sorted.length]; // rotate but bias toward unhappy factions
-    const tmpl = pick.templates[Math.floor(Math.random() * pick.templates.length)];
+    const tmpl = pick.templates[Math.floor(rFn() * pick.templates.length)];
     const fac = FACTIONS.find(f => f.id === pick.fid);
     return {faction:fac, policy:tmpl.p, amount:tmpl.a, rewardMsg:tmpl.rMsg, penaltyMsg:tmpl.pMsg, rewardFx:tmpl.rFx, penaltyFx:tmpl.pFx};
   };
 
   // Generate advisor missions for a round
-  const generateMissions = (rd, mets, cum) => {
+  const generateMissions = (rd, mets, cum, rFn) => {
     return ADVISORS.map(a => {
       // Each advisor picks a mission based on weakest metric in their domain
       let policy, reason;
@@ -900,15 +961,15 @@ export default function Phase4() {
       }
       const pol = POLICIES.find(p => p.id === policy);
       return {advisor: a, policy, policyLabel: pol?.label || policy, amount: 2, reason,
-        rewardFx: {[a.quest[0] === policy ? "trust" : METRICS[Math.floor(Math.random()*3)].id]: 2}};
+        rewardFx: {[a.quest[0] === policy ? "trust" : METRICS[Math.floor(rFn()*3)].id]: 2}};
     });
   };
 
   // Initialize demands/missions for first round
   useEffect(() => {
     if (phase === "allocate" && !factionDemand) {
-      setFactionDemand(generateDemand(round, metrics, factionSat));
-      setAdvisorMissions(generateMissions(round, metrics, cumulative));
+      setFactionDemand(generateDemand(round, metrics, factionSat, rand));
+      setAdvisorMissions(generateMissions(round, metrics, cumulative, rand));
     }
   }, [phase]);
 
@@ -979,8 +1040,8 @@ export default function Phase4() {
     });
 
     // Micro event — now interactive
-    if (Math.random() < diff.microChance && round < ROUNDS - 1) {
-      const me = MICRO[Math.floor(Math.random() * MICRO.length)];
+    if (rand() < diff.microChance && round < ROUNDS - 1) {
+      const me = MICRO[Math.floor(rand() * MICRO.length)];
       setMicroEvent(me);
       setMicroChoiceIdx(null);
       setMicroResult(null);
@@ -991,11 +1052,11 @@ export default function Phase4() {
       if (round === ROUNDS - 1) event = FINAL_EVENT;
       else if (dueChain) {
         event = CHAIN_EVENTS.find(e => e.chainId === dueChain.triggerId);
-        if (!event) { const pool=REGULAR_EVENTS.filter((_,i)=>!usedEvents.includes(i)); event=(pool.length>0?pool:REGULAR_EVENTS)[Math.floor(Math.random()*(pool.length||REGULAR_EVENTS.length))]; setUsedEvents(p=>[...p,REGULAR_EVENTS.indexOf(event)]); }
+        if (!event) { const pool=REGULAR_EVENTS.filter((_,i)=>!usedEvents.includes(i)); event=(pool.length>0?pool:REGULAR_EVENTS)[Math.floor(rand()*(pool.length||REGULAR_EVENTS.length))]; setUsedEvents(p=>[...p,REGULAR_EVENTS.indexOf(event)]); }
         setPendingChains(prev => prev.filter(c => c !== dueChain));
       } else {
         const pool=REGULAR_EVENTS.filter((_,i)=>!usedEvents.includes(i)); const src=pool.length>0?pool:REGULAR_EVENTS;
-        event=pickWeightedEvent(src, round); setUsedEvents(p=>[...p,REGULAR_EVENTS.indexOf(event)]);
+        event=pickWeightedEvent(src, round, rand); setUsedEvents(p=>[...p,REGULAR_EVENTS.indexOf(event)]);
       }
       setCurrentEvent(event);
       setPhase("micro"); // show micro choice screen
@@ -1011,11 +1072,11 @@ export default function Phase4() {
     if (round === ROUNDS - 1) event = FINAL_EVENT;
     else if (dueChain) {
       event = CHAIN_EVENTS.find(e => e.chainId === dueChain.triggerId);
-      if (!event) { const pool=REGULAR_EVENTS.filter((_,i)=>!usedEvents.includes(i)); event=(pool.length>0?pool:REGULAR_EVENTS)[Math.floor(Math.random()*(pool.length||REGULAR_EVENTS.length))]; setUsedEvents(p=>[...p,REGULAR_EVENTS.indexOf(event)]); }
+      if (!event) { const pool=REGULAR_EVENTS.filter((_,i)=>!usedEvents.includes(i)); event=(pool.length>0?pool:REGULAR_EVENTS)[Math.floor(rand()*(pool.length||REGULAR_EVENTS.length))]; setUsedEvents(p=>[...p,REGULAR_EVENTS.indexOf(event)]); }
       setPendingChains(prev => prev.filter(c => c !== dueChain));
     } else {
       const pool=REGULAR_EVENTS.filter((_,i)=>!usedEvents.includes(i)); const src=pool.length>0?pool:REGULAR_EVENTS;
-      event=pickWeightedEvent(src, round); setUsedEvents(p=>[...p,REGULAR_EVENTS.indexOf(event)]);
+      event=pickWeightedEvent(src, round, rand); setUsedEvents(p=>[...p,REGULAR_EVENTS.indexOf(event)]);
     }
     setCurrentEvent(event); setChoiceIdx(null); setShowHist(false); setPhase("event");
     playSound("alert");
@@ -1036,7 +1097,7 @@ export default function Phase4() {
 
   const resolveEvent = () => {
     const choice = currentEvent.choices[choiceIdx];
-    const effAlloc = diminish(alloc); // diminishing returns on 4+ investment
+    const effAlloc = applyCountryMods(diminish(alloc)); // diminishing returns + country modifiers
     const res = choice.fx(effAlloc, cumulative);
     const tm = getTrustMult(metrics.trust);
     const synB = {}; activeSynergies.forEach(s => Object.entries(s.bonus).forEach(([k,v]) => { synB[k]=(synB[k]||0)+v; }));
@@ -1092,8 +1153,8 @@ export default function Phase4() {
     setCurrentEvent(null); setResult(null); setChoiceIdx(null); setMicroEvent(null); setMicroChoiceIdx(null); setMicroResult(null); setPreMicroMetrics(null);
     setShowFactions(false); setShowHist(false); setFactionMsg([]); setNewUnlocks([]);
     setDemandResult(null); setMissionResults([]);
-    setFactionDemand(generateDemand(newRd, metrics, factionSat));
-    setAdvisorMissions(generateMissions(newRd, metrics, cumulative));
+    setFactionDemand(generateDemand(newRd, metrics, factionSat, rand));
+    setAdvisorMissions(generateMissions(newRd, metrics, cumulative, rand));
     setPhase("allocate");
   };
 
@@ -1111,6 +1172,7 @@ export default function Phase4() {
     setFactionSat({}); setFactionMsg([]); setPendingChains([]); setQuestProgress({econ:0,sec:0,ppl:0}); setDifficulty(null); setNewUnlocks([]);
     setFactionDemand(null); setDemandResult(null); setAdvisorMissions([]); setMissionResults([]);
     setEndlessMode(false); setCollapsed(false);
+    setCountry(null); setWeeklyMode(false); rngRef.current = null;
   };
 
   const grade = getGrade(metrics);
@@ -1181,6 +1243,55 @@ export default function Phase4() {
           </div>
         </div>
 
+        {/* COUNTRY SELECTOR */}
+        <div className="fu" style={{animationDelay:"0.55s",maxWidth:620,margin:"0 auto 20px"}}>
+          <div style={{...S.lb,marginBottom:8,color:T.ac}}>SELECT COUNTRY</div>
+          <div style={grd(110)}>
+            {COUNTRIES.map(c => (
+              <button key={c.id} onClick={() => setCountry(c.id)} style={{
+                ...S.cd, padding:10, cursor:"pointer", textAlign:"center",
+                borderColor: country===c.id ? T.ac : T.bd,
+                background: country===c.id ? T.ac+"08" : T.sf,
+                boxShadow: country===c.id ? `0 0 0 2px ${T.ac}22` : S.cd.boxShadow,
+                transition:"all 0.2s",
+              }}>
+                <div style={{fontSize:24}}>{c.flag}</div>
+                <div style={{fontSize:11,fontWeight:700,color:country===c.id?T.ac:T.tx,marginTop:2}}>{c.label}</div>
+                <div style={{fontSize:9,color:T.tm,lineHeight:1.3,marginTop:3}}>{c.desc.split(".")[0]}.</div>
+              </button>
+            ))}
+          </div>
+          {cty && (
+            <div style={{...S.cd,marginTop:8,padding:"8px 14px",textAlign:"left",background:T.sa}}>
+              <div style={{fontSize:11,color:T.t2,fontStyle:"italic",marginBottom:4}}>{cty.flavour}</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                {METRICS.map(m => {
+                  const v = cty.start[m.id];
+                  const col = v>=55?T.gd:v>=40?T.wn:T.bad;
+                  return <span key={m.id} style={{...S.mn,fontSize:9,color:col}}>{m.icon}{v}</span>;
+                })}
+              </div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>
+                {POLICIES.filter(p=>(cty.modifiers[p.id]||1)!==1).map(p=>{
+                  const mod=cty.modifiers[p.id]||1;
+                  return <span key={p.id} style={{...S.mn,fontSize:9,color:mod>1?T.gd:T.bad}}>{p.icon}{mod>1?"+":"−"}{Math.round(Math.abs(mod-1)*100)}%</span>;
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* WEEKLY CHALLENGE TOGGLE */}
+        <div className="fu" style={{animationDelay:"0.6s",marginBottom:20}}>
+          <button onClick={() => setWeeklyMode(!weeklyMode)} style={{
+            ...S.bt, background: weeklyMode ? "#7C3AED" : T.sa, color: weeklyMode ? "#fff" : T.t2,
+            border: `1px solid ${weeklyMode ? "#7C3AED" : T.bd}`, padding: "8px 20px", fontSize: 12,
+          }}>
+            {weeklyMode ? `📅 Weekly Challenge: ${getWeekLabel(getWeeklySeed())} ✓` : "📅 Enable Weekly Challenge"}
+          </button>
+          {weeklyMode && <div style={{...S.mn,fontSize:10,color:"#7C3AED",marginTop:4}}>Same events for everyone this week. Compare strategies.</div>}
+        </div>
+
         {/* Feature pills */}
         <div className="fu" style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:6,maxWidth:600,margin:"0 auto 24px",animationDelay:"0.7s"}}>
           {[{i:"🔗",l:"Event Chains"},{i:"📜",l:"History Cards"},{i:"🔓",l:"Policy Trees"},{i:"⚒",l:"Factions"},{i:"🎯",l:"Quests"},{i:"📈",l:"Sparklines"},{i:"🔒",l:"Locked Choices"}].map(f=>(
@@ -1191,8 +1302,14 @@ export default function Phase4() {
         </div>
 
         <div className="fu" style={{animationDelay:"0.9s"}}>
-          <Btn disabled={!difficulty} onClick={() => { setAlloc(emptyAlloc()); setPointsLeft(diff.pts); setPhase("allocate"); }} style={{padding:"16px 40px",fontSize:16}}>
-            {difficulty ? `Begin Year 2026 (${diff.label}) →` : "Select difficulty to begin"}
+          <Btn disabled={!difficulty||!country} onClick={() => {
+            const sm = cty ? {...cty.start} : {...INIT};
+            setMetrics(sm); setPrevMetrics(sm); setMetricHistory([sm]);
+            setAlloc(emptyAlloc()); setPointsLeft(diff.pts);
+            if (weeklyMode) { rngRef.current = mulberry32(getWeeklySeed()); }
+            setPhase("allocate");
+          }} style={{padding:"16px 40px",fontSize:16}}>
+            {(!difficulty||!country) ? "Select difficulty & country" : `${cty?.flag} Begin ${year} (${diff.label}) →`}
           </Btn>
         </div>
 
@@ -1224,7 +1341,7 @@ export default function Phase4() {
   if (phase === "allocate") return (
     <div style={S.pg}><style>{fonts}{phaseCSS}</style><div ref={topRef}/><div className="phase-enter" style={S.in}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-        <div><div style={{...S.lb,marginBottom:3}}>YEAR {year} — {endlessMode?`ENDLESS ROUND ${round-ROUNDS+1}`:` ROUND ${round+1}/${ROUNDS}`} · {diff.label.toUpperCase()}</div><h2 style={{...S.hl,fontSize:26,margin:0}}>Allocate Resources</h2>{endlessMode&&<div style={{fontSize:11,color:T.bad,marginTop:2}}>⚠ Endless mode — collapse when any metric hits 0 or avg drops below 20</div>}</div>
+        <div><div style={{...S.lb,marginBottom:3}}>{cty?.flag||""} YEAR {year} — {endlessMode?`ENDLESS ROUND ${round-ROUNDS+1}`:` ROUND ${round+1}/${ROUNDS}`} · {diff.label.toUpperCase()}{weeklyMode?" · WEEKLY":""}</div><h2 style={{...S.hl,fontSize:26,margin:0}}>Allocate Resources</h2>{endlessMode&&<div style={{fontSize:11,color:T.bad,marginTop:2}}>⚠ Endless mode — collapse when any metric hits 0 or avg drops below 20</div>}{cty&&<div style={{fontSize:11,color:T.tm,marginTop:1}}>{cty.flavour}</div>}</div>
         <div style={{textAlign:"center",background:pointsLeft===0?T.gb:T.sf,border:`1px solid ${pointsLeft===0?"#BBF7D0":T.bd}`,borderRadius:12,padding:"6px 16px"}}>
           <div style={{...S.mn,fontSize:26,fontWeight:700,color:pointsLeft===0?T.gd:T.tx}}>{pointsLeft}</div>
           <div style={{...S.lb,fontSize:8}}>{bonusPoints>0?`${basePts}+${bonusPoints}`:"PTS LEFT"}</div>
@@ -1498,7 +1615,7 @@ export default function Phase4() {
       <div style={{...S.cd,padding:0,marginBottom:16,overflow:"hidden"}}>
         <div style={{background:evCol,padding:"8px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span style={{...S.mn,fontSize:9,color:"#fff",letterSpacing:"0.2em",textTransform:"uppercase"}}>{currentEvent.category}</span>
-          <span style={{...S.mn,fontSize:9,color:"rgba(255,255,255,0.7)"}}>{year} · {diff.label}</span>
+          <span style={{...S.mn,fontSize:9,color:"rgba(255,255,255,0.7)"}}>{cty?.flag||""} {year} · {diff.label}{weeklyMode?" · Weekly":""}</span>
         </div>
         {isChain&&(<div style={{background:"#FEF3C7",padding:"6px 16px",borderBottom:`1px solid ${T.bd}`}}>
           <span style={{...S.mn,fontSize:10,color:"#92400E"}}>🔗 CHAIN EVENT — consequence of an earlier decision</span>
@@ -1554,7 +1671,7 @@ export default function Phase4() {
   if (phase === "summary") {
     const isGood = result.isGood;
     return (<div style={S.pg}><style>{fonts}{phaseCSS}</style><div ref={topRef}/><div className="phase-enter" style={S.in}>
-      <div style={{...S.lb,marginBottom:3}}>YEAR {year} OUTCOME · {diff.label.toUpperCase()}</div>
+      <div style={{...S.lb,marginBottom:3}}>{cty?.flag||""} YEAR {year} OUTCOME · {diff.label.toUpperCase()}{weeklyMode?" · WEEKLY":""}</div>
       <h2 style={{...S.hl,fontSize:24,marginBottom:3}}>{currentEvent.title}</h2>
       <div style={{fontSize:12,color:T.tm,marginBottom:10}}>
         Chose: <strong style={{color:T.tx}}>{result.choiceLabel}</strong>
@@ -1658,7 +1775,7 @@ export default function Phase4() {
         </div>
       )}
       <div style={{background:`linear-gradient(135deg, ${gc}08, ${gc}15)`,border:`2px solid ${gc}33`,borderRadius:20,padding:"28px 24px 20px",marginBottom:20,maxWidth:520,marginLeft:"auto",marginRight:"auto"}}>
-        <div style={{...S.lb,color:gc,marginBottom:6,letterSpacing:"0.35em"}}>THE INTELLIGENCE AGE · {diff.label.toUpperCase()}{endlessMode?" · ENDLESS":""}</div>
+        <div style={{...S.lb,color:gc,marginBottom:6,letterSpacing:"0.35em"}}>{cty?.flag||""} THE INTELLIGENCE AGE · {cty?.label?.toUpperCase()||""} · {diff.label.toUpperCase()}{endlessMode?" · ENDLESS":""}{weeklyMode?" · WEEKLY":""}</div>
         <div style={{fontFamily:"'Newsreader',serif",fontSize:80,fontWeight:900,color:gc,lineHeight:1}}>{collapsed?(round-ROUNDS):grade.grade}</div>
         <h2 style={{...S.hl,fontSize:24,marginBottom:4}}>{collapsed?`Survived ${round-ROUNDS} Rounds`:grade.title}</h2>
         <p style={{fontSize:13,color:T.t2,marginBottom:12}}>{collapsed?"Systems could not sustain the pressure.":grade.sub}</p>
