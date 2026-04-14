@@ -109,22 +109,54 @@ const HIST = {
 };
 
 const MICRO = [
-  {text:"A major lab open-sources a powerful model. Trust up, security hawks alarmed.",fx:{trust:3,safety_score:-3,innovation:3}},
-  {text:"Senator proposes banning AI in schools. Political capital spent.",fx:{trust:-3,innovation:2,wellbeing:1}},
-  {text:"AI diagnosis saves 200 lives in a rural hospital.",fx:{trust:4,innovation:2,wellbeing:2}},
-  {text:"Energy prices spike 12% from data centre demand. Households furious.",fx:{trust:-5,wellbeing:-3,growth:2}},
-  {text:"Whistleblower reveals manipulated safety evaluations at a frontier lab.",fx:{trust:-5,safety_score:-3}},
-  {text:"WEF: 92M jobs displaced, 170M created. Markets steady but workers anxious.",fx:{trust:1,growth:2,equality:-2,wellbeing:-1}},
-  {text:"Student movement demands universal AI literacy. Congress takes notice.",fx:{trust:2,equality:2,innovation:1}},
-  {text:"AI-written legislation passes committee. Constitutional scholars alarmed.",fx:{trust:-3,innovation:2}},
-  {text:"Major chip fab announces 3nm AI processors ahead of schedule.",fx:{innovation:3,growth:2}},
-  {text:"Rural broadband expansion connects 10M to AI tools for the first time.",fx:{equality:3,trust:1}},
-  {text:"AI-generated misinformation disrupts three state elections simultaneously.",fx:{trust:-6,safety_score:-2}},
-  {text:"Healthcare union endorses AI-assisted diagnostics after pilot success.",fx:{wellbeing:3,trust:2}},
-  {text:"Anthropic publishes RSP v4 with mandatory external audits.",fx:{safety_score:3,trust:2}},
-  {text:"Autonomous AI agent completes a 6-month research project in 3 days. Markets reel.",fx:{innovation:4,growth:3,wellbeing:-4,equality:-2}},
-  {text:"Data centre cooling failure causes 48-hour outage. Critical services disrupted.",fx:{trust:-4,growth:-2,safety_score:-2}},
-  {text:"AI-assisted tax fraud scheme uncovered — $2B in losses.",fx:{trust:-4,growth:-1,equality:-2}},
+  {text:"A major lab open-sources a powerful model. Security agencies want it restricted.",
+    a:{label:"Celebrate openness",icon:"🎉",fx:{trust:4,innovation:4,safety_score:-3},msg:"Open-source community thrives. Security establishment quietly furious."},
+    b:{label:"Restrict distribution",icon:"🔒",fx:{trust:-2,innovation:-2,safety_score:3},msg:"Model pulled from public access. Developers protest. Safety hawks relieved."}},
+  {text:"A senator proposes banning AI in public schools.",
+    a:{label:"Oppose the ban",icon:"📢",fx:{trust:-2,innovation:3,equality:2},msg:"You spend political capital. Schools keep AI tools. Senator vows revenge."},
+    b:{label:"Stay neutral",icon:"🤐",fx:{trust:1,innovation:-2,equality:-3},msg:"Ban passes three states. AI literacy gap widens. You avoided a fight."}},
+  {text:"Energy prices spike 12% from data centre demand. Households are furious.",
+    a:{label:"Emergency price cap",icon:"⚡",fx:{trust:3,growth:-3,wellbeing:2},msg:"Prices stabilise. Data centre expansion slows. Communities breathe easier."},
+    b:{label:"Let markets adjust",icon:"📈",fx:{trust:-5,growth:3,wellbeing:-3},msg:"Prices stay high for months. Protests outside data centres. Growth continues."}},
+  {text:"A whistleblower reveals a frontier lab manipulated safety evaluations.",
+    a:{label:"Launch investigation",icon:"🔍",fx:{trust:2,safety_score:2,innovation:-3},msg:"Investigation reveals systemic issues. Two labs pause development. Industry shaken."},
+    b:{label:"Issue a statement",icon:"📝",fx:{trust:-4,safety_score:-2,innovation:1},msg:"Statement satisfies no one. Whistleblower goes to the press. Story dominates for weeks."}},
+  {text:"WEF reports 92M jobs displaced, 170M created. But transitions are painful.",
+    a:{label:"Fund transition support",icon:"🏥",fx:{wellbeing:3,equality:2,growth:-2},msg:"Emergency retraining funds deployed. Eases the worst displacement."},
+    b:{label:"Emphasise net positive",icon:"📊",fx:{trust:-3,growth:2,wellbeing:-2},msg:"Markets rally on the framing. Workers feel dismissed. Media calls it tone-deaf."}},
+  {text:"Student movement demands AI literacy be taught in every school.",
+    a:{label:"Announce federal programme",icon:"🎓",fx:{equality:3,trust:3,growth:-1},msg:"AI Literacy Act fast-tracked. Students celebrate. Budget hawks grumble."},
+    b:{label:"Defer to states",icon:"🏛",fx:{trust:-1,equality:-2,innovation:1},msg:"Some states act, most don't. The digital divide widens between regions."}},
+  {text:"AI-written legislation passes committee. Constitutional scholars alarmed.",
+    a:{label:"Require human review",icon:"⚖",fx:{trust:3,innovation:-2,safety_score:1},msg:"Mandatory human review amendment passes. Process slows but legitimacy holds."},
+    b:{label:"Allow it to proceed",icon:"🤖",fx:{trust:-4,innovation:3},msg:"Efficiency gains are real. But the precedent troubles democrats across the spectrum."}},
+  {text:"Major chip fab announces 3nm AI processors ahead of schedule.",
+    a:{label:"Secure domestic supply",icon:"🏭",fx:{growth:2,innovation:3,geopolitics:2},msg:"Strategic reserve agreement signed. Supply chain resilience improves."},
+    b:{label:"Maintain open trade",icon:"🌐",fx:{growth:3,innovation:2,geopolitics:-1},msg:"Cheaper chips for everyone. But dependency on foreign fabs deepens."}},
+  {text:"Rural broadband expansion reaches 10M — but AI tools need more than connectivity.",
+    a:{label:"Fund AI training centres",icon:"🔑",fx:{equality:4,trust:2,growth:-1},msg:"Community AI hubs open in 200 rural towns. Digital divide begins closing."},
+    b:{label:"Declare mission accomplished",icon:"✅",fx:{trust:-2,equality:-1,growth:1},msg:"Connectivity without literacy. Rural communities have access but not capability."}},
+  {text:"AI misinformation disrupts three state elections simultaneously.",
+    a:{label:"Emergency platform rules",icon:"🛡",fx:{trust:2,safety_score:2,innovation:-3},msg:"Platforms comply. Some legitimate content caught. Election integrity holds."},
+    b:{label:"Protect free speech",icon:"📢",fx:{trust:-5,safety_score:-2,innovation:1},msg:"Misinformation spreads unchecked. Two election results contested in court."}},
+  {text:"Healthcare union endorses AI diagnostics after successful pilot — but doctors resist.",
+    a:{label:"Mandate pilot expansion",icon:"🏥",fx:{wellbeing:4,innovation:2,trust:-1},msg:"AI diagnostics roll out nationwide. Patient outcomes improve. Some doctors quit."},
+    b:{label:"Let hospitals decide",icon:"🤝",fx:{wellbeing:1,trust:2,innovation:-1},msg:"Adoption is patchy. Rich hospitals adopt, rural ones can't afford it."}},
+  {text:"Anthropic publishes RSP v4 with mandatory external audits. Others haven't followed.",
+    a:{label:"Make audits mandatory",icon:"📋",fx:{safety_score:4,trust:3,innovation:-2},msg:"Mandatory audit regime established. Labs protest costs but comply."},
+    b:{label:"Encourage voluntary adoption",icon:"🤝",fx:{safety_score:1,trust:-1,innovation:2},msg:"Anthropic leads alone. Others publish transparency reports but skip the hard parts."}},
+  {text:"Autonomous AI agent completes a 6-month research project in 3 days.",
+    a:{label:"Invest in AI research tools",icon:"🔬",fx:{innovation:5,growth:3,wellbeing:-3},msg:"Research accelerates dramatically. But thousands of research assistants face redundancy."},
+    b:{label:"Restrict autonomous research",icon:"⏸",fx:{innovation:-2,safety_score:2,wellbeing:1},msg:"Research slows. Scientists frustrated. But human oversight is preserved."}},
+  {text:"Data centre cooling failure causes 48-hour outage. Critical services disrupted.",
+    a:{label:"Mandate redundancy standards",icon:"🛡",fx:{safety_score:3,trust:2,growth:-2},msg:"New infrastructure resilience standards. Costs rise but outages drop 90%."},
+    b:{label:"Let industry self-correct",icon:"🏢",fx:{safety_score:-2,trust:-3,growth:1},msg:"Industry promises to do better. Another outage hits 6 months later."}},
+  {text:"AI-assisted tax fraud scheme uncovered — $2B in losses to public revenue.",
+    a:{label:"AI fraud detection taskforce",icon:"🔍",fx:{trust:2,safety_score:2,growth:-1,equality:1},msg:"Taskforce recovers $800M and prevents further schemes. Compliance costs rise."},
+    b:{label:"Standard enforcement",icon:"📊",fx:{trust:-3,equality:-2},msg:"Slow response. More schemes emerge. Public feels the system is rigged."}},
+  {text:"A foreign government offers to share AI threat intelligence — but wants access to your models.",
+    a:{label:"Accept the deal",icon:"🤝",fx:{geopolitics:4,safety_score:2,trust:-2},msg:"Intelligence shared. Models partially exposed. Allies gain, but so do their contractors."},
+    b:{label:"Decline politely",icon:"🏛",fx:{geopolitics:-2,safety_score:-1,trust:1},msg:"Sovereignty preserved. But the intel gap widens and the ally feels snubbed."}},
 ];
 
 // ── EVENTS — with conditional choices + era weighting ──
@@ -488,6 +520,8 @@ export default function Phase4() {
   const [choiceIdx, setChoiceIdx] = useState(null);
   const [result, setResult] = useState(null);
   const [microEvent, setMicroEvent] = useState(null);
+  const [microChoiceIdx, setMicroChoiceIdx] = useState(null); // which micro choice player picked
+  const [microResult, setMicroResult] = useState(null); // resolved micro choice {label, msg, fx}
   const [usedEvents, setUsedEvents] = useState([]);
   const [history, setHistory] = useState([]);
   const [showAdvisors, setShowAdvisors] = useState(false);
@@ -675,15 +709,34 @@ export default function Phase4() {
       Object.entries(r.fx).forEach(([k,v]) => { currentMetrics[k] = clamp((currentMetrics[k]||50) + v); });
     });
 
-    // Micro event
+    // Micro event — now interactive
     if (Math.random() < diff.microChance && round < ROUNDS - 1) {
       const me = MICRO[Math.floor(Math.random() * MICRO.length)];
       setMicroEvent(me);
-      Object.entries(me.fx).forEach(([k,v]) => { currentMetrics[k] = clamp((currentMetrics[k]||50) + v); });
-    } else setMicroEvent(null);
+      setMicroChoiceIdx(null);
+      setMicroResult(null);
+      setMetrics(currentMetrics);
+      // Pre-pick the main event now so it's ready after micro choice
+      const dueChain = pendingChains.find(c => c.roundDue === round);
+      let event;
+      if (round === ROUNDS - 1) event = FINAL_EVENT;
+      else if (dueChain) {
+        event = CHAIN_EVENTS.find(e => e.chainId === dueChain.triggerId);
+        if (!event) { const pool=REGULAR_EVENTS.filter((_,i)=>!usedEvents.includes(i)); event=(pool.length>0?pool:REGULAR_EVENTS)[Math.floor(Math.random()*(pool.length||REGULAR_EVENTS.length))]; setUsedEvents(p=>[...p,REGULAR_EVENTS.indexOf(event)]); }
+        setPendingChains(prev => prev.filter(c => c !== dueChain));
+      } else {
+        const pool=REGULAR_EVENTS.filter((_,i)=>!usedEvents.includes(i)); const src=pool.length>0?pool:REGULAR_EVENTS;
+        event=pickWeightedEvent(src, round); setUsedEvents(p=>[...p,REGULAR_EVENTS.indexOf(event)]);
+      }
+      setCurrentEvent(event);
+      setPhase("micro"); // show micro choice screen
+      playSound("alert");
+      return;
+    }
+    setMicroEvent(null); setMicroResult(null);
     setMetrics(currentMetrics);
 
-    // Pick event
+    // Pick event (no micro this round)
     const dueChain = pendingChains.find(c => c.roundDue === round);
     let event;
     if (round === ROUNDS - 1) event = FINAL_EVENT;
@@ -697,6 +750,19 @@ export default function Phase4() {
     }
     setCurrentEvent(event); setChoiceIdx(null); setShowHist(false); setPhase("event");
     playSound("alert");
+  };
+
+  // Resolve interactive micro-event choice, then proceed to main event
+  const resolveMicro = () => {
+    if (microChoiceIdx === null) return;
+    const chosen = microChoiceIdx === 0 ? microEvent.a : microEvent.b;
+    // Apply chosen effects to metrics
+    const updated = {...metrics};
+    Object.entries(chosen.fx).forEach(([k,v]) => { updated[k] = clamp((updated[k]||50) + v); });
+    setMetrics(updated);
+    setMicroResult({label: chosen.label, msg: chosen.msg, fx: chosen.fx});
+    setChoiceIdx(null); setShowHist(false); setPhase("event");
+    playSound("resolve");
   };
 
   const resolveEvent = () => {
@@ -724,7 +790,7 @@ export default function Phase4() {
     }
 
     setResult({...res,synB,t2B,qB,tm,choiceLabel:choice.label,isChain:!!currentEvent.chainStep,isGood:res.good});
-    setHistory(p => [...p, {year,eventTitle:currentEvent.title,category:currentEvent.category,choiceLabel:choice.label,narrative:res.narrative,synergies:activeSynergies.map(s=>s.label),microText:microEvent?.text,isChain:!!currentEvent.chainStep,isGood:res.good,factionMsgs:factionMsg}]);
+    setHistory(p => [...p, {year,eventTitle:currentEvent.title,category:currentEvent.category,choiceLabel:choice.label,narrative:res.narrative,synergies:activeSynergies.map(s=>s.label),microText:microResult?.msg,microLabel:microResult?.label,isChain:!!currentEvent.chainStep,isGood:res.good,factionMsgs:factionMsg}]);
     const avg = Object.values(final).reduce((a,b)=>a+b,0)/Object.values(final).length;
     setBonusPoints(avg>=70?2:avg>=55?1:0);
     setPhase("summary");
@@ -734,14 +800,14 @@ export default function Phase4() {
     if (freshUnlocks && freshUnlocks.length > 0) setTimeout(() => playSound("unlock"), 500);
     if (activeSynergies.length > 0) setTimeout(() => playSound("synergy"), 200);
     // Auto-save
-    saveGame({round,metrics:final,cumulative,factionSat:nfs||factionSat,questProgress:questProgress,history:[...history,{year,eventTitle:currentEvent.title,category:currentEvent.category,choiceLabel:choice.label,narrative:res.narrative,synergies:activeSynergies.map(s=>s.label),microText:microEvent?.text,isChain:!!currentEvent.chainStep,isGood:res.good,factionMsgs:factionMsg}],metricHistory:[...metricHistory,{...final}],difficulty,bonusPoints:avg>=70?2:avg>=55?1:0,pendingChains,usedEvents});
+    saveGame({round,metrics:final,cumulative,factionSat:nfs||factionSat,questProgress:questProgress,history:[...history,{year,eventTitle:currentEvent.title,category:currentEvent.category,choiceLabel:choice.label,narrative:res.narrative,synergies:activeSynergies.map(s=>s.label),microText:microResult?.msg,microLabel:microResult?.label,isChain:!!currentEvent.chainStep,isGood:res.good,factionMsgs:factionMsg}],metricHistory:[...metricHistory,{...final}],difficulty,bonusPoints:avg>=70?2:avg>=55?1:0,pendingChains,usedEvents});
   };
 
   const nextRound = () => {
     if (round+1>=ROUNDS) { setPhase("end"); playSound("grade"); clearSave(); return; }
     const newRd = round + 1;
     setRound(newRd); setAlloc(emptyAlloc()); setPointsLeft(basePts+bonusPoints);
-    setCurrentEvent(null); setResult(null); setChoiceIdx(null); setMicroEvent(null); setPreMicroMetrics(null);
+    setCurrentEvent(null); setResult(null); setChoiceIdx(null); setMicroEvent(null); setMicroChoiceIdx(null); setMicroResult(null); setPreMicroMetrics(null);
     setShowAdvisors(false); setShowFactions(false); setShowHist(false); setFactionMsg([]); setNewUnlocks([]);
     setDemandResult(null); setMissionResults([]);
     setFactionDemand(generateDemand(newRd, metrics, factionSat));
@@ -753,7 +819,7 @@ export default function Phase4() {
     clearSave();
     setPhase("intro"); setRound(0); setMetrics({...INIT}); setPrevMetrics({...INIT}); setPreMicroMetrics(null);
     setMetricHistory([{...INIT}]); setAlloc(emptyAlloc()); setCumulative(emptyAlloc());
-    setPointsLeft(10); setBonusPoints(0); setCurrentEvent(null); setChoiceIdx(null); setResult(null); setMicroEvent(null);
+    setPointsLeft(10); setBonusPoints(0); setCurrentEvent(null); setChoiceIdx(null); setResult(null); setMicroEvent(null); setMicroChoiceIdx(null); setMicroResult(null);
     setUsedEvents([]); setHistory([]); setShowAdvisors(false); setShowFactions(false); setShowHist(false); setShowGlossary(false);
     setFactionSat({}); setFactionMsg([]); setPendingChains([]); setQuestProgress({econ:0,sec:0,ppl:0}); setDifficulty(null); setNewUnlocks([]);
     setFactionDemand(null); setDemandResult(null); setAdvisorMissions([]); setMissionResults([]);
@@ -1011,15 +1077,60 @@ export default function Phase4() {
     </div></div>
   );
 
+  // ── MICRO-EVENT CHOICE ──
+  if (phase === "micro" && microEvent) {
+    return (<div style={S.pg}><style>{fonts}{phaseCSS}</style><div ref={topRef}/><div className="phase-enter" style={{...S.in,paddingTop:32}}>
+      <Timeline round={round}/>
+      <div style={{...S.cd,padding:0,marginBottom:16,overflow:"hidden"}}>
+        <div style={{background:T.wn,padding:"8px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{...S.mn,fontSize:9,color:"#fff",letterSpacing:"0.2em",textTransform:"uppercase"}}>INTERIM CRISIS</span>
+          <span style={{...S.mn,fontSize:9,color:"rgba(255,255,255,0.7)"}}>{year} · Before main event</span>
+        </div>
+        <div style={{padding:"24px 20px 16px",textAlign:"center"}}>
+          <div style={{fontSize:28,marginBottom:8}}>⚡</div>
+          <h2 style={{...S.hl,fontSize:22,marginBottom:8}}>Quick Decision Required</h2>
+          <p style={{fontSize:14,color:T.t2,maxWidth:500,margin:"0 auto",lineHeight:1.7}}>{microEvent.text}</p>
+        </div>
+      </div>
+      <div style={{...S.lb,fontSize:9,marginBottom:8,textAlign:"center"}}>HOW DO YOU RESPOND?</div>
+      <div style={grd(240)}>
+        {[microEvent.a, microEvent.b].map((opt, i) => (
+          <button key={i} onClick={() => setMicroChoiceIdx(i)} style={{
+            ...S.cd, padding:16, cursor:"pointer", textAlign:"left",
+            borderColor: microChoiceIdx === i ? T.wn : T.bd,
+            background: microChoiceIdx === i ? T.wb : T.sf,
+            boxShadow: microChoiceIdx === i ? `0 0 0 2px ${T.wn}33` : S.cd.boxShadow,
+            transition: "all 0.2s", marginBottom: 0,
+          }}>
+            <div style={{fontSize:22,marginBottom:6}}>{opt.icon}</div>
+            <div style={{fontSize:14,fontWeight:700,color:T.tx,marginBottom:4}}>{opt.label}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+              {Object.entries(opt.fx).map(([k,v]) => (
+                <span key={k} style={{...S.mn,fontSize:10,color:v>0?T.gd:T.bad}}>
+                  {v>0?"+":""}{v} {METRICS.find(m=>m.id===k)?.label?.slice(0,6)||k}
+                </span>
+              ))}
+            </div>
+          </button>
+        ))}
+      </div>
+      <div style={{textAlign:"center",marginTop:16}}>
+        <Btn onClick={resolveMicro} disabled={microChoiceIdx===null} color={T.wn}>Decide & Continue →</Btn>
+      </div>
+    </div></div>);
+  }
+
   // ── EVENT with conditional choices ──
   if (phase === "event") {
     const evCol = catCol[currentEvent.category]||T.ac;
     const isChain = !!currentEvent.chainStep;
     return (<div style={S.pg}><style>{fonts}{phaseCSS}</style><div ref={topRef}/><div className="phase-enter" style={{...S.in,paddingTop:32}}>
       <Timeline round={round}/>
-      {microEvent&&(<div style={{...S.cd,padding:"10px 14px",marginBottom:12,borderColor:"#FDE68A",background:T.wb}}>
-        <div style={{...S.lb,fontSize:8,color:T.wn,marginBottom:3}}>⚡ INTERIM EVENT</div>
-        <div style={{fontSize:12,color:T.t2}}>{microEvent.text}</div>
+      {/* Show resolved micro result if there was one */}
+      {microResult&&(<div style={{...S.cd,padding:"10px 14px",marginBottom:12,borderColor:"#FDE68A",background:T.wb}}>
+        <div style={{...S.lb,fontSize:8,color:T.wn,marginBottom:3}}>⚡ INTERIM DECISION: {microResult.label}</div>
+        <div style={{fontSize:12,color:T.t2}}>{microResult.msg}</div>
+        <div style={{display:"flex",gap:6,marginTop:4}}>{Object.entries(microResult.fx).map(([k,v])=>(<span key={k} style={{...S.mn,fontSize:10,color:v>0?T.gd:T.bad}}>{v>0?"+":""}{v} {METRICS.find(m=>m.id===k)?.label?.slice(0,6)||k}</span>))}</div>
       </div>)}
       {/* Tier-2 unlock alert on event screen */}
       {newUnlocks.length > 0 && (
@@ -1244,7 +1355,7 @@ export default function Phase4() {
             <span style={{...S.mn,fontSize:9,color:T.tm}}>{h.choiceLabel}</span>
           </div>
           {h.isChain&&<div style={{...S.mn,fontSize:9,color:T.wn,marginTop:1}}>🔗 Chain event</div>}
-          {h.microText&&<div style={{fontSize:11,color:T.wn,marginTop:1}}>⚡ {h.microText}</div>}
+          {h.microText&&<div style={{fontSize:11,color:T.wn,marginTop:1}}>⚡ {h.microLabel ? `${h.microLabel}: ` : ""}{h.microText}</div>}
           <div style={{fontSize:12,color:T.t2,lineHeight:1.5,marginTop:2}}>{h.narrative}</div>
           {h.factionMsgs?.length>0&&h.factionMsgs.map((m,j)=><div key={j} style={{...S.mn,fontSize:9,color:m.type==="bonus"?T.gd:T.bad,marginTop:1}}>{m.icon} {m.msg}</div>)}
           {h.synergies?.length>0&&<div style={{...S.mn,fontSize:9,color:T.gd,marginTop:1}}>⚡ {h.synergies.join(", ")}</div>}
