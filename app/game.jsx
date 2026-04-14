@@ -127,8 +127,9 @@ const MICRO = [
   {text:"AI-assisted tax fraud scheme uncovered — $2B in losses.",fx:{trust:-4,growth:-1,equality:-2}},
 ];
 
-// ── EVENTS — with conditional choices (requires field) ──
-const mkE = (t,sub,cat,ch,hist,chainId,chainStep) => ({title:t,subtitle:sub,category:cat,choices:ch,hist:hist||HIST[cat],chainId,chainStep});
+// ── EVENTS — with conditional choices + era weighting ──
+// era: "early" (rounds 0-2), "mid" (3-5), "late" (6-7) — biases selection
+const mkE = (t,sub,cat,ch,hist,chainId,chainStep,era) => ({title:t,subtitle:sub,category:cat,choices:ch,hist:hist||HIST[cat],chainId,chainStep,era:era||"any"});
 
 const EVENTS = [
   mkE("The Overnight Layoff","AI agents replace 200K call centre jobs in one quarter","LABOUR",[
@@ -254,6 +255,28 @@ const CHAIN_EVENTS = EVENTS.filter(e => e.chainStep);
 const REGULAR_EVENTS = EVENTS.filter(e => !e.chainStep && e.category !== "SUPERINTELLIGENCE");
 const FINAL_EVENT = EVENTS.find(e => e.category === "SUPERINTELLIGENCE");
 
+// Era weighting: bias event selection by game phase
+const EVENT_ERAS = {"The Overnight Layoff":"early","Grid Revolt":"early","The Wealth Divide":"early","AI Startup Explosion":"early","Pathogen Blueprint":"mid","Deceptive Alignment":"mid","Government AI Failure":"mid","The Care Pivot":"mid","Scientific Breakthrough":"mid","Allied AI Pact":"late","Deepfake Election":"late","RSP Crisis":"late"};
+function pickWeightedEvent(pool, round) {
+  const era = round <= 2 ? "early" : round <= 5 ? "mid" : "late";
+  // Weight matching-era events 3x, others 1x
+  const weighted = pool.map(e => ({e, w: (EVENT_ERAS[e.title] === era) ? 3 : (EVENT_ERAS[e.title] === "any" || !EVENT_ERAS[e.title]) ? 1.5 : 1}));
+  const total = weighted.reduce((s, w) => s + w.w, 0);
+  let r = Math.random() * total;
+  for (const {e, w} of weighted) { r -= w; if (r <= 0) return e; }
+  return weighted[weighted.length - 1].e;
+}
+
+// Diminishing returns: investment above 3 in a single policy yields less
+function diminish(alloc) {
+  const effective = {};
+  Object.entries(alloc).forEach(([k, v]) => {
+    if (v <= 3) effective[k] = v;
+    else effective[k] = 3 + (v - 3) * 0.6; // 4→3.6, 5→4.2, 6→4.8
+  });
+  return effective;
+}
+
 // ── GAME LOGIC ──
 function getTrustMult(t) { return t >= 65 ? 1.2 : t <= 35 ? 0.8 : 1; }
 function applyTrust(raw, tm) { return raw > 0 ? Math.round(raw * tm) : raw < 0 ? Math.round(raw * (2 - tm)) : 0; }
@@ -307,6 +330,12 @@ function endNarrative(m, cum, hist) {
 
 // ── STYLES ──
 const fonts = `@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600;6..72,700;6..72,800&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap');`;
+const phaseCSS = `
+@keyframes phaseIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+@keyframes countUp { from { opacity:0.4; } to { opacity:1; } }
+.phase-enter { animation: phaseIn 0.4s ease both; }
+.count-anim { animation: countUp 0.3s ease; }
+`;
 const T={bg:"#F8F6F1",sf:"#FFFFFF",sa:"#F2F0EB",bd:"#E2DFD8",tx:"#1A1A1A",t2:"#5C5852",tm:"#8A857C",tf:"#B5B0A7",ac:"#2563EB",gd:"#16A34A",gb:"#F0FDF4",wn:"#CA8A04",wb:"#FEFCE8",bad:"#DC2626",bb:"#FEF2F2"};
 const S={
   pg:{minHeight:"100vh",background:T.bg,color:T.tx,fontFamily:"'Outfit',sans-serif"},
@@ -320,8 +349,79 @@ const S={
 const catCol={LABOUR:"#C05621",INFRASTRUCTURE:"#CA8A04",SAFETY:"#DC2626",ECONOMY:"#16A34A",GOVERNANCE:"#0891B2",GEOPOLITICS:"#4F46E5",SCIENCE:"#C026D3",SUPERINTELLIGENCE:"#DC2626"};
 const grd = (min) => ({display:"grid",gridTemplateColumns:`repeat(auto-fill,minmax(${min}px,1fr))`,gap:8});
 
+// ── SOUND SYSTEM (Tone.js) ──
+let audioCtx = null;
+function playSound(type) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    gain.gain.value = 0.08;
+    if (type === "click") { osc.frequency.value = 800; gain.gain.value = 0.05; osc.type = "sine"; osc.start(); osc.stop(audioCtx.currentTime + 0.05); }
+    else if (type === "synergy") { osc.frequency.value = 523; osc.type = "sine"; gain.gain.value = 0.06; osc.start(); setTimeout(() => osc.frequency.value = 659, 80); setTimeout(() => osc.frequency.value = 784, 160); osc.stop(audioCtx.currentTime + 0.3); }
+    else if (type === "alert") { osc.frequency.value = 440; osc.type = "triangle"; gain.gain.value = 0.07; osc.start(); setTimeout(() => osc.frequency.value = 330, 150); osc.stop(audioCtx.currentTime + 0.3); }
+    else if (type === "unlock") { osc.frequency.value = 440; osc.type = "sine"; gain.gain.value = 0.06; osc.start(); setTimeout(() => osc.frequency.value = 554, 100); setTimeout(() => osc.frequency.value = 659, 200); setTimeout(() => osc.frequency.value = 880, 300); osc.stop(audioCtx.currentTime + 0.5); }
+    else if (type === "resolve") { osc.frequency.value = 300; osc.type = "triangle"; gain.gain.value = 0.05; osc.start(); osc.stop(audioCtx.currentTime + 0.15); }
+    else if (type === "good") { osc.frequency.value = 523; osc.type = "sine"; gain.gain.value = 0.06; osc.start(); setTimeout(() => osc.frequency.value = 784, 120); osc.stop(audioCtx.currentTime + 0.25); }
+    else if (type === "bad") { osc.frequency.value = 350; osc.type = "sawtooth"; gain.gain.value = 0.04; osc.start(); setTimeout(() => osc.frequency.value = 250, 100); osc.stop(audioCtx.currentTime + 0.2); }
+    else if (type === "grade") { osc.frequency.value = 392; osc.type = "sine"; gain.gain.value = 0.07; osc.start(); setTimeout(() => osc.frequency.value = 494, 150); setTimeout(() => osc.frequency.value = 587, 300); setTimeout(() => osc.frequency.value = 784, 450); osc.stop(audioCtx.currentTime + 0.7); }
+  } catch(e) { /* silent fail if audio blocked */ }
+}
+
+// ── AUTO-SAVE via persistent storage ──
+const SAVE_KEY = "intelligence-age-save";
+async function saveGame(state) {
+  try { if (window.storage) await window.storage.set(SAVE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+async function loadGame() {
+  try {
+    if (!window.storage) return null;
+    const r = await window.storage.get(SAVE_KEY);
+    return r ? JSON.parse(r.value) : null;
+  } catch(e) { return null; }
+}
+async function clearSave() {
+  try { if (window.storage) await window.storage.delete(SAVE_KEY); } catch(e) {}
+}
+
 // ── COMPONENTS ──
 function Ring({value,color}){const sz=36,st=2.5,r=(sz-st)/2,ci=2*Math.PI*r;return(<svg width={sz} height={sz} style={{transform:"rotate(-90deg)"}}><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={T.bd} strokeWidth={st}/><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={color} strokeWidth={st} strokeDasharray={ci} strokeDashoffset={ci-(value/100)*ci} strokeLinecap="round" style={{transition:"stroke-dashoffset 0.8s ease"}}/></svg>);}
+
+// Animated number that counts from prev to current
+function AnimNum({value, prev, color}) {
+  const [display, setDisplay] = useState(prev ?? value);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (prev === undefined || prev === value) { setDisplay(value); return; }
+    const start = prev, end = value, duration = 600;
+    const t0 = performance.now();
+    const tick = (now) => {
+      const p = Math.min((now - t0) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
+      setDisplay(Math.round(start + (end - start) * eased));
+      if (p < 1) ref.current = requestAnimationFrame(tick);
+    };
+    ref.current = requestAnimationFrame(tick);
+    return () => { if (ref.current) cancelAnimationFrame(ref.current); };
+  }, [value, prev]);
+  return <span className="count-anim" style={{...S.mn,fontSize:12,fontWeight:600,color}}>{display}</span>;
+}
+
+// Tooltip on hover
+function Tip({text, children}) {
+  const [show, setShow] = useState(false);
+  return (
+    <span style={{position:"relative",display:"inline-block"}} onMouseEnter={()=>setShow(true)} onMouseLeave={()=>setShow(false)}>
+      {children}
+      {show && text && (
+        <div style={{position:"absolute",bottom:"calc(100% + 6px)",left:"50%",transform:"translateX(-50%)",background:"#1A1A1A",color:"#E2DFD8",fontSize:11,lineHeight:1.5,padding:"6px 10px",borderRadius:8,whiteSpace:"normal",width:220,zIndex:50,boxShadow:"0 4px 12px rgba(0,0,0,0.2)",pointerEvents:"none"}}>
+          {text}
+        </div>
+      )}
+    </span>
+  );
+}
 
 // PHASE 4: Sparkline component
 function Sparkline({data, color, width=60, height=20}) {
@@ -337,12 +437,14 @@ function Sparkline({data, color, width=60, height=20}) {
 
 function MetricBar({metric,value,prev,history:hist}){
   const d=value-prev,col=value>=60?T.gd:value>=40?T.wn:T.bad;
+  const tips={"growth":"Measures overall economic output and productivity gains from AI adoption.","equality":"How evenly prosperity is distributed. Drops when growth benefits few.","trust":"Public confidence in institutions and AI governance. Eroded by scandals and secrecy.","safety_score":"Containment capacity for frontier AI risks including CBRN threats.","innovation":"New businesses, R&D output, scientific breakthroughs. Decays without investment.","wellbeing":"Worker quality of life — job security, benefits, work-life balance.","geopolitics":"International influence, alliance strength, and coordination capacity."};
   return(<div style={{marginBottom:9}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}>
-      <span style={{fontSize:13,color:T.t2,fontWeight:500}}>{metric.icon} {metric.label}</span>
+      <Tip text={tips[metric.id]}><span style={{fontSize:13,color:T.t2,fontWeight:500,cursor:"help",borderBottom:`1px dotted ${T.bd}`}}>{metric.icon} {metric.label}</span></Tip>
       <span style={{display:"flex",alignItems:"center",gap:4}}>
         {hist && <Sparkline data={hist} color={col} />}
-        <span style={{...S.mn,fontSize:12,fontWeight:600,color:d>0?T.gd:d<0?T.bad:T.tm}}>{value}{d!==0&&` (${d>0?"+":""}${d})`}</span>
+        <AnimNum value={value} prev={prev} color={d>0?T.gd:d<0?T.bad:T.tm}/>
+        {d!==0&&<span style={{...S.mn,fontSize:10,color:d>0?T.gd:T.bad}}>({d>0?"+":""}{d})</span>}
       </span>
     </div>
     <div style={{height:7,background:T.sa,borderRadius:4,overflow:"hidden",border:`1px solid ${T.bd}`}}>
@@ -410,11 +512,25 @@ export default function Phase4() {
 
   useEffect(() => { topRef.current?.scrollIntoView({behavior:"smooth"}); }, [phase]);
 
+  // Auto-load saved game
+  useEffect(() => {
+    loadGame().then(s => {
+      if (s && s.round > 0 && s.difficulty) {
+        setDifficulty(s.difficulty); setRound(s.round); setMetrics(s.metrics); setCumulative(s.cumulative);
+        setFactionSat(s.factionSat||{}); setQuestProgress(s.questProgress||{econ:0,sec:0,ppl:0});
+        setHistory(s.history||[]); setMetricHistory(s.metricHistory||[{...INIT}]);
+        setBonusPoints(s.bonusPoints||0); setPendingChains(s.pendingChains||[]); setUsedEvents(s.usedEvents||[]);
+        setPrevMetrics(s.metrics); setPhase("allocate");
+      }
+    });
+  }, []);
+
   const adjust = (id, delta) => {
     const nv = (alloc[id]||0) + delta;
     if (nv < 0 || nv > 6 || (delta > 0 && pointsLeft <= 0)) return;
     setAlloc(p => ({...p, [id]: nv}));
     setPointsLeft(p => p - delta);
+    playSound("click");
   };
   const resetAlloc = () => { setAlloc(emptyAlloc()); setPointsLeft(totalPoints); };
 
@@ -577,14 +693,16 @@ export default function Phase4() {
       setPendingChains(prev => prev.filter(c => c !== dueChain));
     } else {
       const pool=REGULAR_EVENTS.filter((_,i)=>!usedEvents.includes(i)); const src=pool.length>0?pool:REGULAR_EVENTS;
-      event=src[Math.floor(Math.random()*src.length)]; setUsedEvents(p=>[...p,REGULAR_EVENTS.indexOf(event)]);
+      event=pickWeightedEvent(src, round); setUsedEvents(p=>[...p,REGULAR_EVENTS.indexOf(event)]);
     }
     setCurrentEvent(event); setChoiceIdx(null); setShowHist(false); setPhase("event");
+    playSound("alert");
   };
 
   const resolveEvent = () => {
     const choice = currentEvent.choices[choiceIdx];
-    const res = choice.fx(alloc, cumulative);
+    const effAlloc = diminish(alloc); // diminishing returns on 4+ investment
+    const res = choice.fx(effAlloc, cumulative);
     const tm = getTrustMult(metrics.trust);
     const synB = {}; activeSynergies.forEach(s => Object.entries(s.bonus).forEach(([k,v]) => { synB[k]=(synB[k]||0)+v; }));
     const t2B = {}; tier2Unlocked.forEach(t => Object.entries(t.passive).forEach(([k,v]) => { t2B[k]=(t2B[k]||0)+v; }));
@@ -610,22 +728,29 @@ export default function Phase4() {
     const avg = Object.values(final).reduce((a,b)=>a+b,0)/Object.values(final).length;
     setBonusPoints(avg>=70?2:avg>=55?1:0);
     setPhase("summary");
+    // Sounds
+    playSound("resolve");
+    setTimeout(() => { if (res.good === true) playSound("good"); else if (res.good === false) playSound("bad"); }, 300);
+    if (freshUnlocks && freshUnlocks.length > 0) setTimeout(() => playSound("unlock"), 500);
+    if (activeSynergies.length > 0) setTimeout(() => playSound("synergy"), 200);
+    // Auto-save
+    saveGame({round,metrics:final,cumulative,factionSat:nfs||factionSat,questProgress:questProgress,history:[...history,{year,eventTitle:currentEvent.title,category:currentEvent.category,choiceLabel:choice.label,narrative:res.narrative,synergies:activeSynergies.map(s=>s.label),microText:microEvent?.text,isChain:!!currentEvent.chainStep,isGood:res.good,factionMsgs:factionMsg}],metricHistory:[...metricHistory,{...final}],difficulty,bonusPoints:avg>=70?2:avg>=55?1:0,pendingChains,usedEvents});
   };
 
   const nextRound = () => {
-    if (round+1>=ROUNDS) { setPhase("end"); return; }
+    if (round+1>=ROUNDS) { setPhase("end"); playSound("grade"); clearSave(); return; }
     const newRd = round + 1;
     setRound(newRd); setAlloc(emptyAlloc()); setPointsLeft(basePts+bonusPoints);
     setCurrentEvent(null); setResult(null); setChoiceIdx(null); setMicroEvent(null); setPreMicroMetrics(null);
     setShowAdvisors(false); setShowFactions(false); setShowHist(false); setFactionMsg([]); setNewUnlocks([]);
     setDemandResult(null); setMissionResults([]);
-    // Generate new demand and missions for next round
     setFactionDemand(generateDemand(newRd, metrics, factionSat));
     setAdvisorMissions(generateMissions(newRd, metrics, cumulative));
     setPhase("allocate");
   };
 
   const restart = () => {
+    clearSave();
     setPhase("intro"); setRound(0); setMetrics({...INIT}); setPrevMetrics({...INIT}); setPreMicroMetrics(null);
     setMetricHistory([{...INIT}]); setAlloc(emptyAlloc()); setCumulative(emptyAlloc());
     setPointsLeft(10); setBonusPoints(0); setCurrentEvent(null); setChoiceIdx(null); setResult(null); setMicroEvent(null);
@@ -743,7 +868,7 @@ export default function Phase4() {
 
   // ── ALLOCATE ──
   if (phase === "allocate") return (
-    <div style={S.pg}><style>{fonts}</style><div ref={topRef}/><div style={S.in}>
+    <div style={S.pg}><style>{fonts}{phaseCSS}</style><div ref={topRef}/><div className="phase-enter" style={S.in}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
         <div><div style={{...S.lb,marginBottom:3}}>YEAR {year} — ROUND {round+1}/{ROUNDS} · {diff.label.toUpperCase()}</div><h2 style={{...S.hl,fontSize:26,margin:0}}>Allocate Resources</h2></div>
         <div style={{textAlign:"center",background:pointsLeft===0?T.gb:T.sf,border:`1px solid ${pointsLeft===0?"#BBF7D0":T.bd}`,borderRadius:12,padding:"6px 16px"}}>
@@ -856,9 +981,12 @@ export default function Phase4() {
       <div style={grd(250)}>
         {POLICIES.map(p => {
           const v=alloc[p.id]||0,cv=cumulative[p.id]||0,t2Done=cv>=p.t2.thresh;
-          return (<div key={p.id} style={{...S.cd,padding:12,borderColor:v>0?p.color+"44":T.bd,background:v>0?p.color+"06":T.sf,marginBottom:0}}>
+          // Synergy indicators: which active synergies does this policy contribute to?
+          const policySynergies = activeSynergies.filter(s => s.ids.includes(p.id));
+          const inSynergy = policySynergies.length > 0;
+          return (<div key={p.id} style={{...S.cd,padding:12,borderColor:inSynergy?"#BBF7D0":v>0?p.color+"44":T.bd,background:v>0?p.color+"06":T.sf,marginBottom:0,borderLeft:inSynergy?`3px solid ${T.gd}`:""}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-              <span style={{fontSize:12,fontWeight:600}}>{p.icon} {p.label}<InfoButton term={p.t2.name}/></span>
+              <Tip text={p.t2.info}><span style={{fontSize:12,fontWeight:600,cursor:"help"}}>{p.icon} {p.label}</span></Tip>
               <span style={{...S.mn,fontSize:16,fontWeight:700,color:v>0?p.color:T.tf}}>{v}</span>
             </div>
             <div style={{fontSize:10,color:T.tm,marginBottom:5,lineHeight:1.3}}>{p.desc}</div>
@@ -868,6 +996,7 @@ export default function Phase4() {
             </div>
             <div style={{display:"flex",gap:3,justifyContent:"center",marginBottom:2}}>{[0,1,2,3,4,5].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:i<v?p.color:T.bd}}/>)}</div>
             <div style={{...S.mn,fontSize:8,color:t2Done?T.gd:T.tf,textAlign:"center"}}>{t2Done?`🔓 ${p.t2.name}`:`${cv}/${p.t2.thresh} → ${p.t2.name}`}</div>
+            {inSynergy && <div style={{...S.mn,fontSize:8,color:T.gd,textAlign:"center",marginTop:2}}>⚡ {policySynergies.map(s=>s.label).join(", ")}</div>}
           </div>);
         })}
       </div>
@@ -886,7 +1015,7 @@ export default function Phase4() {
   if (phase === "event") {
     const evCol = catCol[currentEvent.category]||T.ac;
     const isChain = !!currentEvent.chainStep;
-    return (<div style={S.pg}><style>{fonts}</style><div ref={topRef}/><div style={{...S.in,paddingTop:32}}>
+    return (<div style={S.pg}><style>{fonts}{phaseCSS}</style><div ref={topRef}/><div className="phase-enter" style={{...S.in,paddingTop:32}}>
       <Timeline round={round}/>
       {microEvent&&(<div style={{...S.cd,padding:"10px 14px",marginBottom:12,borderColor:"#FDE68A",background:T.wb}}>
         <div style={{...S.lb,fontSize:8,color:T.wn,marginBottom:3}}>⚡ INTERIM EVENT</div>
@@ -972,7 +1101,7 @@ export default function Phase4() {
   // ── SUMMARY ──
   if (phase === "summary") {
     const isGood = result.isGood;
-    return (<div style={S.pg}><style>{fonts}</style><div ref={topRef}/><div style={S.in}>
+    return (<div style={S.pg}><style>{fonts}{phaseCSS}</style><div ref={topRef}/><div className="phase-enter" style={S.in}>
       <div style={{...S.lb,marginBottom:3}}>YEAR {year} OUTCOME · {diff.label.toUpperCase()}</div>
       <h2 style={{...S.hl,fontSize:24,marginBottom:3}}>{currentEvent.title}</h2>
       <div style={{fontSize:12,color:T.tm,marginBottom:10}}>
@@ -1066,7 +1195,7 @@ export default function Phase4() {
     const chainCount = history.filter(h=>h.isChain).length;
     const questsDone = ADVISORS.filter(a=>questProgress[a.id]>=3);
 
-    return (<div style={S.pg}><style>{fonts}</style><div ref={topRef}/><div style={{...S.in,paddingTop:40,textAlign:"center"}}>
+    return (<div style={S.pg}><style>{fonts}{phaseCSS}</style><div ref={topRef}/><div className="phase-enter" style={{...S.in,paddingTop:40,textAlign:"center"}}>
 
       {/* PHASE 4: Shareable end card */}
       <div style={{background:`linear-gradient(135deg, ${gc}08, ${gc}15)`,border:`2px solid ${gc}33`,borderRadius:20,padding:"28px 24px 20px",marginBottom:20,maxWidth:520,marginLeft:"auto",marginRight:"auto"}}>
