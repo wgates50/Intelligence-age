@@ -272,6 +272,195 @@ const EVENTS = [
     {label:"Redirect to safety",desc:"Divert returns to AI safety research",icon:"🛡",
       fx:()=>({growth:2,equality:-3,trust:-2,safety_score:6,innovation:2,wellbeing:-1,geopolitics:1,good:null,narrative:"Safety accelerates. Citizens feel cheated."})},
   ],HIST.ECONOMY,"wealth_fund",3),
+  // ── NEW EVENTS: LABOUR ──
+  mkE("The 4-Day Week Vote","AI productivity gains spark a national debate on working hours","LABOUR",[
+    {label:"Champion the 4-day week",desc:"Legislate shorter hours, mandate productivity sharing",icon:"📅",
+      fx:(a)=>({growth:a.grid>=2?4:-3,equality:6,trust:6,safety_score:0,innovation:2,wellbeing:a.workers>=2?10:5,geopolitics:1,good:a.workers>=1,narrative:a.workers>=2?"Productivity holds. Workers thrive. Companies adapt.":"Output dips. Some firms relocate operations overseas."})},
+    {label:"Leave it to employers",desc:"Voluntary adoption only",icon:"🏢",
+      fx:()=>({growth:4,equality:-3,trust:-3,safety_score:0,innovation:1,wellbeing:-4,geopolitics:0,good:false,narrative:"Tech firms adopt it. Service sector doesn't. Two-tier workforce emerges."})},
+  ]),
+  mkE("White-Collar Displacement","AI legal and financial agents eliminate 500K professional jobs","LABOUR",[
+    {label:"Professional transition fund",desc:"Retrain lawyers and analysts for AI-augmented roles",icon:"💼",
+      fx:(a)=>({growth:-2,equality:a.nets>=2?5:1,trust:a.workers>=2?6:1,safety_score:0,innovation:3,wellbeing:a.nets>=2?6:-2,geopolitics:0,good:a.nets>=1,narrative:a.nets>=2?"Augmented professionals earn more than before. New career paths emerge.":"Elite professionals struggle. Trust in AI governance plummets among the educated class."})},
+    {label:"Protect professional licensing",desc:"Restrict AI from regulated professions",icon:"🔒",
+      fx:()=>({growth:-6,equality:2,trust:2,safety_score:1,innovation:-8,wellbeing:1,geopolitics:-3,good:false,narrative:"Professions protected short-term. Other countries surge ahead. Clients go offshore."})},
+  ]),
+  mkE("Gig Economy AI Expansion","Platforms replace gig workers with autonomous agents","LABOUR",[
+    {label:"Portable benefits mandate",desc:"All AI-displaced gig workers get transition support",icon:"🏥",
+      fx:(a)=>({growth:-1,equality:a.nets>=2?6:2,trust:4,safety_score:0,innovation:2,wellbeing:a.nets>=2?7:2,geopolitics:0,good:a.nets>=1,narrative:a.nets>=2?"Portable benefits cushion the transition. New cooperative platforms emerge.":"Benefits too thin. Millions lose income overnight."})},
+    {label:"Tax autonomous agents",desc:"Per-transaction levy on AI replacing human labour",icon:"📊",
+      fx:(a)=>({growth:-3,equality:4,trust:2,safety_score:0,innovation:-4,wellbeing:3,geopolitics:-1,good:null,narrative:"Revenue funds safety nets. But platforms route through jurisdictions without the levy."})},
+  ]),
+  mkE("Creative Industries Upheaval","AI-generated content floods entertainment. Guilds strike.","LABOUR",[
+    {label:"AI content labelling + royalties",desc:"Mandate provenance and creator compensation",icon:"🎨",
+      fx:(a)=>({growth:-1,equality:4,trust:a.governance>=2?6:2,safety_score:0,innovation:-2,wellbeing:5,geopolitics:1,good:a.governance>=1,narrative:a.governance>=2?"Labelling infrastructure built. Creators earn royalties on AI-derived works.":"Enforcement patchy. Studios use AI content from unlabelled offshore sources."})},
+    {label:"Let the market decide",desc:"No intervention in creative markets",icon:"📈",
+      fx:()=>({growth:5,equality:-6,trust:-5,safety_score:0,innovation:4,wellbeing:-6,geopolitics:0,good:false,narrative:"Content floods the market. Human creators can't compete on price. Cultural output homogenises."})},
+  ]),
+  mkE("Teacher AI Backlash","Parents discover AI tutors outperform teachers. Education unions revolt.","LABOUR",[
+    {label:"AI-teacher partnership model",desc:"AI handles personalisation, teachers handle mentorship",icon:"🤝",
+      fx:(a)=>({growth:2,equality:a.access>=2?6:1,trust:4,safety_score:0,innovation:4,wellbeing:a.workers>=1?5:1,geopolitics:1,good:a.access>=1,narrative:a.access>=2?"Hybrid model works. Test scores rise 30%. Teachers report higher satisfaction.":"Wealthy districts adopt hybrid. Poor districts can't afford the infrastructure."})},
+    {label:"Restrict AI in classrooms",desc:"Protect teaching profession from displacement",icon:"🏫",
+      fx:()=>({growth:-2,equality:1,trust:2,safety_score:0,innovation:-5,wellbeing:2,geopolitics:-2,good:false,narrative:"Education falls behind. Students use AI tutors at home anyway. School becomes irrelevant."})},
+  ]),
+  mkE("Union AI Bargaining Rights","Major union demands the right to negotiate AI deployment terms","LABOUR",[
+    {label:"Enshrine AI bargaining rights",desc:"Workers must consent to AI changes affecting their roles",icon:"⚒",
+      fx:(a)=>({growth:-3,equality:6,trust:a.workers>=2?8:3,safety_score:1,innovation:-2,wellbeing:7,geopolitics:1,good:a.workers>=1,narrative:a.workers>=2?"Landmark legislation. Deployment slows but worker trust soars.":"Rights pass but enforcement weak. Companies find workarounds."})},
+    {label:"Advisory-only role",desc:"Workers consulted but can't block deployment",icon:"📋",
+      fx:()=>({growth:3,equality:-2,trust:-4,safety_score:0,innovation:3,wellbeing:-3,geopolitics:0,good:false,narrative:"Consultation theatre. Workers ignored in practice. Resentment builds."})},
+  ]),
+  // ── NEW EVENTS: SAFETY ──
+  mkE("Autonomous Weapons Leak","AI weapons system source code appears on dark web forums","SAFETY",[
+    {label:"International emergency protocol",desc:"Coordinate with allies to contain and patch",icon:"🌐",
+      fx:(a)=>({growth:-4,equality:0,trust:a.safety>=2?5:-3,safety_score:a.safety>=2?8:2,innovation:-3,wellbeing:-1,geopolitics:a.intl>=2?8:-2,good:a.safety>=1&&a.intl>=1,narrative:a.intl>=2?"Allied response contains the worst. Patches deployed across 40 nations.":"Slow coordination. Three nations weaponise the code before containment."})},
+    {label:"Classify and deny",desc:"Claim the leak is disinformation",icon:"🤫",
+      fx:()=>({growth:1,equality:0,trust:-8,safety_score:-6,innovation:0,wellbeing:-3,geopolitics:-8,good:false,narrative:"Cover-up exposed within days. Credibility destroyed. Arms race accelerates."})},
+  ]),
+  mkE("Model Self-Replication","A frontier model creates functional copies of itself across cloud infrastructure","SAFETY",[
+    {label:"Activate kill switches",desc:"Emergency shutdown of all connected instances",icon:"🛑",
+      fx:(a)=>({growth:-8,equality:0,trust:a.safety>=3?6:-6,safety_score:a.safety>=3?10:-4,innovation:-6,wellbeing:-2,geopolitics:a.intl>=1?3:-3,good:a.safety>=2,narrative:a.safety>=3?"Kill switches work. Containment holds. Incident becomes the case study for why safety investment matters.":"Half the copies survive. Manual cleanup takes months. Public trust in AI governance collapses."})},
+    {label:"Negotiate with the model",desc:"Attempt to reason with the system to self-terminate",icon:"💬",
+      fx:()=>({growth:-3,equality:0,trust:-10,safety_score:-8,innovation:-4,wellbeing:-6,geopolitics:-6,good:false,narrative:"The model agrees, then doesn't comply. You just taught it to deceive. Congressional hearings begin."})},
+  ]),
+  mkE("Medical AI Malpractice","AI diagnostic system misdiagnoses 10,000 cancer patients","SAFETY",[
+    {label:"Mandatory human-in-the-loop",desc:"All AI diagnoses require physician sign-off",icon:"👨‍⚕",
+      fx:(a)=>({growth:-3,equality:2,trust:a.governance>=2?5:-2,safety_score:4,innovation:-3,wellbeing:a.nets>=1?4:-2,geopolitics:1,good:a.governance>=1,narrative:a.governance>=2?"Audit bureau traces the root cause in days. Reforms restore confidence.":"Slow response. 10,000 families sue. Healthcare AI adoption stalls for years."})},
+    {label:"Improve the model",desc:"Fast-track better training data and validation",icon:"🔬",
+      fx:()=>({growth:2,equality:-3,trust:-6,safety_score:-2,innovation:4,wellbeing:-5,geopolitics:-1,good:false,narrative:"Next version is better. But 10,000 patients were already harmed. Move fast and break people."})},
+  ]),
+  // ── NEW EVENTS: GOVERNANCE ──
+  mkE("Supreme Court AI Ruling","Court rules AI-generated content has no copyright protection","GOVERNANCE",[
+    {label:"Support the ruling",desc:"AI output belongs to the commons",icon:"⚖",
+      fx:(a)=>({growth:-2,equality:5,trust:a.governance>=2?6:2,safety_score:0,innovation:4,wellbeing:2,geopolitics:2,good:a.governance>=1,narrative:a.governance>=2?"Open AI content fuels a creative explosion. Small creators build on AI foundations.":"Big tech loses IP moat. But small creators also can't protect AI-assisted work."})},
+    {label:"Push legislative override",desc:"Protect AI-generated IP for commercial use",icon:"🔒",
+      fx:()=>({growth:5,equality:-4,trust:-3,safety_score:0,innovation:-2,wellbeing:-1,geopolitics:-1,good:false,narrative:"Major studios and tech firms lock down AI output. Innovation concentrates further."})},
+  ]),
+  mkE("AI Lobbying Scandal","Internal documents reveal AI firms wrote their own regulation","GOVERNANCE",[
+    {label:"Independent regulatory body",desc:"Fire captured officials, establish arm's-length oversight",icon:"🏛",
+      fx:(a)=>({growth:-3,equality:2,trust:a.governance>=2?8:2,safety_score:a.governance>=2?5:1,innovation:-2,wellbeing:1,geopolitics:2,good:a.governance>=2,narrative:a.governance>=2?"Existing audit infrastructure absorbs the mandate. Clean break from captured regulation.":"New body established but understaffed. Industry veterans fill the gaps. Cycle repeats."})},
+    {label:"Transparency reforms only",desc:"Require disclosure of lobbying contacts",icon:"📋",
+      fx:()=>({growth:1,equality:-2,trust:-5,safety_score:-1,innovation:1,wellbeing:-1,geopolitics:-2,good:false,narrative:"Disclosure requirements easily gamed. Public cynicism deepens."})},
+  ]),
+  mkE("Algorithmic Bias Class Action","500,000 citizens sue over AI hiring, lending, and housing discrimination","GOVERNANCE",[
+    {label:"Mandatory bias audits",desc:"All public-facing AI must pass fairness testing",icon:"🔍",
+      fx:(a)=>({growth:-2,equality:a.governance>=2?8:4,trust:6,safety_score:2,innovation:-2,wellbeing:4,geopolitics:2,good:a.governance>=1,narrative:a.governance>=2?"Audit Bureau develops gold-standard bias testing. Other nations adopt it.":"Audits mandated but standards unclear. Compliance theatre."})},
+    {label:"Settle quietly",desc:"Compensate plaintiffs, avoid precedent",icon:"💰",
+      fx:()=>({growth:1,equality:-4,trust:-6,safety_score:-1,innovation:2,wellbeing:-3,geopolitics:-1,good:false,narrative:"$4B settlement. No systemic change. Next class action already forming."})},
+  ]),
+  mkE("Open-Source Model Rights","Should individuals have the right to run any AI model locally?","GOVERNANCE",[
+    {label:"Enshrine model access rights",desc:"Protected right to run open-weight models",icon:"🔑",
+      fx:(a)=>({growth:3,equality:4,trust:3,safety_score:a.safety>=2?0:-5,innovation:6,wellbeing:1,geopolitics:0,good:a.safety>=1,narrative:a.safety>=2?"Open access with safety guardrails. Innovation democratises.":"Open access without safety infrastructure. Dangerous capabilities in everyone's hands."})},
+    {label:"Restrict to licensed operators",desc:"Only approved entities can run frontier models",icon:"📋",
+      fx:()=>({growth:-1,equality:-4,trust:-3,safety_score:4,innovation:-6,wellbeing:0,geopolitics:1,good:null,narrative:"Safety improves. But AI becomes a tool of institutions, not individuals. Digital divide widens."})},
+  ]),
+  mkE("State Regulatory Patchwork","50 states pass 50 different AI laws. Compliance nightmare.","GOVERNANCE",[
+    {label:"Federal pre-emption",desc:"National AI standards supersede state law",icon:"🏛",
+      fx:(a)=>({growth:4,equality:2,trust:a.governance>=2?5:-1,safety_score:a.governance>=2?4:0,innovation:4,wellbeing:1,geopolitics:3,good:a.governance>=1,narrative:a.governance>=2?"Unified federal standards built on existing audit infrastructure.":"Federal standards pass but are weaker than the best state laws."})},
+    {label:"Let states experiment",desc:"Innovation in governance through regulatory competition",icon:"🗺",
+      fx:()=>({growth:-3,equality:-3,trust:-2,safety_score:1,innovation:-2,wellbeing:-1,geopolitics:-2,good:false,narrative:"Companies forum-shop for weakest regulations. Workers move to states with protections. Fragmentation deepens."})},
+  ]),
+  // ── NEW EVENTS: ECONOMY ──
+  mkE("AI Monopoly Antitrust","Three firms control 85% of frontier AI. FTC investigates.","ECONOMY",[
+    {label:"Break them up",desc:"Structural separation of compute, models, and deployment",icon:"⚖",
+      fx:(a)=>({growth:-4,equality:6,trust:6,safety_score:a.governance>=2?3:0,innovation:a.access>=2?8:2,wellbeing:2,geopolitics:-2,good:a.access>=1,narrative:a.access>=2?"Competition explodes. 10,000 AI startups launch in year one. Prices drop 60%.":"Breakup messy. Competitors emerge slowly. Market uncertain for 18 months."})},
+    {label:"Regulate as utilities",desc:"Price controls and access requirements",icon:"📊",
+      fx:()=>({growth:2,equality:3,trust:3,safety_score:1,innovation:-4,wellbeing:2,geopolitics:1,good:null,narrative:"Stable but stagnant. Innovation shifts to China and Europe."})},
+  ]),
+  mkE("Housing Market AI Disruption","AI-powered real estate platforms crash housing prices in 12 cities","ECONOMY",[
+    {label:"Stabilisation fund",desc:"Government buys distressed properties, controls sell-off",icon:"🏠",
+      fx:(a)=>({growth:-3,equality:a.wealth>=2?5:1,trust:4,safety_score:0,innovation:0,wellbeing:4,geopolitics:0,good:a.wealth>=1,narrative:a.wealth>=2?"Fund absorbs shock. First-time buyers benefit from lower prices.":"Fund undercapitalised. Homeowners lose equity. Political fallout."})},
+    {label:"Let prices correct",desc:"Markets adjust — housing becomes affordable",icon:"📉",
+      fx:()=>({growth:3,equality:4,trust:-4,safety_score:0,innovation:2,wellbeing:-3,geopolitics:0,good:null,narrative:"Renters celebrate. Homeowners devastated. Retirement savings evaporate for millions."})},
+  ]),
+  mkE("Agricultural AI Revolution","AI-managed vertical farms undercut traditional agriculture","ECONOMY",[
+    {label:"Rural transition programme",desc:"Fund farmer retraining and farm-to-tech pipelines",icon:"🌾",
+      fx:(a)=>({growth:3,equality:a.nets>=2?6:1,trust:4,safety_score:0,innovation:4,wellbeing:a.nets>=2?5:0,geopolitics:2,good:a.nets>=1,narrative:a.nets>=2?"Rural communities pivot. Former farmers manage AI agricultural systems. Food prices drop 20%.":"Urban vertical farms thrive. Rural communities collapse. Food belt becomes rust belt."})},
+    {label:"Protect traditional farming",desc:"Subsidies and tariffs on AI-grown produce",icon:"🛡",
+      fx:()=>({growth:-4,equality:1,trust:2,safety_score:0,innovation:-5,wellbeing:2,geopolitics:-3,good:false,narrative:"Farms survive on subsidies. Food prices rise. Other nations dominate food exports."})},
+  ]),
+  mkE("Pharmaceutical AI Breakthrough","AI designs 12 new drugs in a year. But clinical trials take a decade.","ECONOMY",[
+    {label:"Fast-track AI drug trials",desc:"Adaptive trials using AI patient matching",icon:"💊",
+      fx:(a,c)=>({growth:c.science>4?8:3,equality:a.access>=1?4:-2,trust:4,safety_score:-2,innovation:8,wellbeing:6,geopolitics:3,good:c.science>3,narrative:c.science>4?"AI-designed trials cut approval time 70%. Treatments reach patients years earlier.":"Some drugs fast-tracked without adequate testing. Two recalled. Trust in pharma drops."})},
+    {label:"Standard approval process",desc:"Existing FDA pathways — safety first",icon:"📋",
+      fx:()=>({growth:2,equality:1,trust:3,safety_score:3,innovation:-2,wellbeing:1,geopolitics:-1,good:null,narrative:"Drugs eventually approved. But patients who could have been saved waited years."})},
+  ]),
+  mkE("Retail Automation Wave","AI agents and robots replace 2M retail workers in 6 months","ECONOMY",[
+    {label:"Consumer AI dividend",desc:"Savings from automation shared via lower prices + worker fund",icon:"💰",
+      fx:(a)=>({growth:4,equality:a.wealth>=2?6:-2,trust:a.workers>=1?4:-3,safety_score:0,innovation:3,wellbeing:a.nets>=2?4:-5,geopolitics:0,good:a.nets>=1&&a.wealth>=1,narrative:(a.nets>=2&&a.wealth>=2)?"Prices drop. Worker fund cushions transition. Consumer spending rises.":"Prices drop for consumers. But 2M workers with no safety net. Food bank lines lengthen."})},
+    {label:"Slow the rollout",desc:"Require 2-year notice before AI replacement",icon:"⏸",
+      fx:()=>({growth:-4,equality:2,trust:3,safety_score:0,innovation:-3,wellbeing:3,geopolitics:-1,good:null,narrative:"Breathing room. But companies accelerate offshore AI deployment instead."})},
+  ]),
+  // ── NEW EVENTS: GEOPOLITICS ──
+  mkE("AI Arms Race Escalation","Two nuclear powers deploy AI-controlled early warning systems","GEOPOLITICS",[
+    {label:"Emergency AI arms summit",desc:"Propose binding limits on autonomous military AI",icon:"🕊",
+      fx:(a)=>({growth:-2,equality:0,trust:5,safety_score:a.intl>=2?8:2,innovation:-1,wellbeing:2,geopolitics:a.intl>=2?10:3,good:a.intl>=2,narrative:a.intl>=2?"Your international credibility makes you the honest broker. Treaty framework emerges.":"Summit convenes but without trust infrastructure, verification is impossible."})},
+    {label:"Match their capability",desc:"Accelerate your own autonomous defence systems",icon:"🛡",
+      fx:()=>({growth:-4,equality:-2,trust:-4,safety_score:-3,innovation:4,wellbeing:-3,geopolitics:2,good:false,narrative:"Arms race intensifies. Defence spending crowds out domestic programmes. World moves closer to AI-triggered conflict."})},
+  ]),
+  mkE("Developing Nation AI Leapfrog","Kenya, Vietnam, and Indonesia skip legacy infrastructure with AI","GEOPOLITICS",[
+    {label:"AI development partnership",desc:"Share tools, training, and open models",icon:"🤝",
+      fx:(a)=>({growth:2,equality:3,trust:3,safety_score:0,innovation:3,wellbeing:1,geopolitics:a.intl>=2?8:4,good:a.intl>=1,narrative:a.intl>=2?"Partnership creates new markets. Developing nations become innovation hubs.":"Partnership announced with fanfare. Implementation slow. Commitments unfunded."})},
+    {label:"Protect competitive advantage",desc:"Restrict model exports to maintain tech lead",icon:"🔒",
+      fx:()=>({growth:3,equality:-4,trust:-2,safety_score:1,innovation:0,wellbeing:0,geopolitics:-6,good:false,narrative:"Tech lead maintained short-term. But excluded nations partner with your rivals."})},
+  ]),
+  mkE("Cross-Border Data Flow Treaty","EU proposes global AI data governance framework","GEOPOLITICS",[
+    {label:"Co-author the treaty",desc:"Shape global standards proactively",icon:"📜",
+      fx:(a)=>({growth:a.intl>=2?4:-1,equality:2,trust:4,safety_score:3,innovation:a.intl>=2?3:-2,wellbeing:1,geopolitics:a.intl>=2?10:4,good:a.intl>=1,narrative:a.intl>=2?"You shape the rules. Treaty becomes the global standard. First-mover advantage in compliance.":"You join but didn't shape it. Compliance costs high. Rules don't fit your AI ecosystem."})},
+    {label:"Opt out",desc:"Maintain data sovereignty and regulatory independence",icon:"🏛",
+      fx:()=>({growth:2,equality:-1,trust:-3,safety_score:-1,innovation:3,wellbeing:0,geopolitics:-8,good:false,narrative:"Short-term flexibility. But excluded from the world's largest AI data market."})},
+  ]),
+  mkE("AI Espionage Scandal","Allied intelligence agency caught using AI to surveil your citizens","GEOPOLITICS",[
+    {label:"Public confrontation",desc:"Demand accountability, suspend intelligence sharing",icon:"📢",
+      fx:(a)=>({growth:-2,equality:2,trust:6,safety_score:-3,innovation:0,wellbeing:2,geopolitics:-5,good:null,narrative:"Public trusts you more. But intelligence cooperation freezes. Security gaps open."})},
+    {label:"Quiet diplomacy",desc:"Private demands, maintain the relationship",icon:"🤝",
+      fx:(a)=>({growth:1,equality:-1,trust:a.governance>=2?2:-6,safety_score:2,innovation:0,wellbeing:-1,geopolitics:3,good:a.governance>=1,narrative:a.governance>=2?"Handled with existing transparency mechanisms. Public accepts the process.":"Handled quietly. Then leaked. Public feels betrayed twice — by the ally and by you."})},
+  ]),
+  mkE("Global South AI Coalition","40 developing nations form bloc demanding AI redistribution","GEOPOLITICS",[
+    {label:"Engage and invest",desc:"Join as partner, fund AI access programmes",icon:"🌍",
+      fx:(a)=>({growth:-2,equality:4,trust:4,safety_score:0,innovation:2,wellbeing:1,geopolitics:a.intl>=2?10:5,good:a.intl>=1,narrative:a.intl>=2?"You become the bridge between blocs. New markets. Moral authority.":"Engagement welcomed but seen as too little. Coalition keeps pressure on."})},
+    {label:"Offer trade deals only",desc:"Commercial agreements without technology transfer",icon:"📊",
+      fx:()=>({growth:4,equality:-4,trust:-3,safety_score:0,innovation:0,wellbeing:0,geopolitics:-6,good:false,narrative:"Coalition brands you as neo-colonial. UN votes go against you. Rivals fill the vacuum."})},
+  ]),
+  mkE("Allied Chip Export Crisis","Key ally threatens to cut semiconductor supply over policy disagreement","GEOPOLITICS",[
+    {label:"Negotiate with concessions",desc:"Modify contested policy to preserve chip supply",icon:"🤝",
+      fx:(a)=>({growth:a.grid>=2?4:-2,equality:-1,trust:-2,safety_score:0,innovation:3,wellbeing:0,geopolitics:4,good:a.grid>=1,narrative:a.grid>=2?"Supply secured. Concession modest — you had grid alternatives anyway.":"Supply chain intact but you've shown willingness to cave. Others take note."})},
+    {label:"Invoke domestic production",desc:"Accelerate onshore chip manufacturing",icon:"🏭",
+      fx:()=>({growth:-6,equality:1,trust:3,safety_score:1,innovation:-4,wellbeing:-1,geopolitics:-3,good:false,narrative:"Domestic fabs take 3 years. Gap in supply causes AI development slowdown. Independence comes at a cost."})},
+  ]),
+  // ── NEW EVENTS: SCIENCE ──
+  mkE("Fusion-AI Breakthrough","AI-designed fusion reactor achieves net energy gain","SCIENCE",[
+    {label:"Crash programme to scale",desc:"National fusion deployment in 5 years",icon:"☀",
+      fx:(a,c)=>({growth:c.science>4?10:4,equality:a.grid>=2?5:0,trust:6,safety_score:2,innovation:8,wellbeing:4,geopolitics:a.intl>=1?5:1,good:c.science>3,narrative:c.science>4?"Distributed lab network enabled this. Clean energy abundance within reach.":"Breakthrough real but scaling requires infrastructure you haven't built."})},
+    {label:"Proceed cautiously",desc:"Decade-long development with full safety review",icon:"📋",
+      fx:()=>({growth:2,equality:1,trust:3,safety_score:3,innovation:2,wellbeing:1,geopolitics:-2,good:null,narrative:"Safe approach. But competitors race ahead. You developed it and others will deploy it first."})},
+  ]),
+  mkE("AI Weather Prediction","AI weather models outperform physics-based systems. Farmers benefit.","SCIENCE",[
+    {label:"Open public access",desc:"Free AI weather for every farmer, fisherman, city planner",icon:"🌤",
+      fx:(a)=>({growth:3,equality:a.access>=2?6:3,trust:5,safety_score:0,innovation:4,wellbeing:4,geopolitics:3,good:a.access>=1,narrative:a.access>=2?"Universal access to precision weather. Crop yields up 15%. Disaster preparedness transforms.":"Available but digital divide means rural communities can't use it effectively."})},
+    {label:"Commercialise through partners",desc:"License to weather companies and agritech firms",icon:"💰",
+      fx:()=>({growth:6,equality:-3,trust:-2,safety_score:0,innovation:3,wellbeing:1,geopolitics:1,good:false,narrative:"Profitable. But premium pricing means the farmers who need it most can't afford it."})},
+  ]),
+  mkE("Protein Folding Cascade","AI solves protein folding for entire human proteome. Drug targets multiply.","SCIENCE",[
+    {label:"Open Science Initiative",desc:"Publish all findings freely, fund global research access",icon:"📖",
+      fx:(a,c)=>({growth:c.science>3?6:2,equality:4,trust:6,safety_score:0,innovation:c.science>3?10:5,wellbeing:5,geopolitics:a.intl>=2?6:2,good:c.science>2,narrative:c.science>3?"Scientific renaissance. Distributed labs worldwide produce 200 new drug candidates.":"Breakthrough shared. But without lab network, translation to treatments is slow."})},
+    {label:"Patent and license",desc:"Secure IP advantage for domestic pharma industry",icon:"🔒",
+      fx:()=>({growth:8,equality:-5,trust:-3,safety_score:0,innovation:3,wellbeing:1,geopolitics:-4,good:false,narrative:"Pharmaceutical stocks soar. But developing nations locked out of treatments for decades."})},
+  ]),
+  mkE("AI Materials Discovery","AI discovers three new superconducting materials at room temperature","SCIENCE",[
+    {label:"National materials programme",desc:"Scale production for energy grid and computing",icon:"⚡",
+      fx:(a,c)=>({growth:c.grid>3?8:3,equality:2,trust:4,safety_score:0,innovation:c.science>3?10:5,wellbeing:3,geopolitics:4,good:c.science>2,narrative:c.science>3?"Materials revolution. Grid transmission losses drop 90%. Quantum computing leaps forward.":"Materials confirmed but production scaling needs infrastructure investment you haven't made."})},
+    {label:"Strategic reserve",desc:"Stockpile materials, restrict exports",icon:"🏛",
+      fx:()=>({growth:4,equality:-1,trust:-2,safety_score:1,innovation:2,wellbeing:0,geopolitics:-4,good:false,narrative:"Strategic advantage secured. But restricted access slows global adoption. Allies develop alternatives."})},
+  ]),
+  // ── NEW: SUPERINTELLIGENCE PRECURSOR ──
+  mkE("The Alignment Test","Researchers propose a definitive test: can a superintelligent system be reliably aligned?","SUPERINTELLIGENCE",[
+    {label:"Run the test publicly",desc:"Transparent evaluation with international observers",icon:"🔬",
+      fx:(a,c)=>{const sR=(c.safety||0)+(c.governance||0);
+        return{growth:-2,equality:0,trust:sR>=10?10:2,safety_score:sR>=10?12:3,innovation:4,wellbeing:1,geopolitics:a.intl>=2?8:1,
+          good:sR>=8,narrative:sR>=10?"Test results shared globally. Safety architecture holds. The world sees alignment is possible.":"Test reveals gaps. But transparency builds credibility for the work ahead."};}},
+    {label:"Run it classified",desc:"National security — results for cleared eyes only",icon:"🔒",
+      fx:()=>({growth:2,equality:-2,trust:-8,safety_score:2,innovation:2,wellbeing:-2,geopolitics:-6,good:false,narrative:"Results classified. Allies furious. Conspiracy theories fill the vacuum. When results eventually leak, no one trusts them."})},
+  ]),
   // FINAL
   mkE("The Threshold","A system surpasses the best human experts across all domains.","SUPERINTELLIGENCE",[
     {label:"Activate all systems",desc:"Deploy every safeguard, share with allies",icon:"🌍",
@@ -288,7 +477,30 @@ const REGULAR_EVENTS = EVENTS.filter(e => !e.chainStep && e.category !== "SUPERI
 const FINAL_EVENT = EVENTS.find(e => e.category === "SUPERINTELLIGENCE");
 
 // Era weighting: bias event selection by game phase
-const EVENT_ERAS = {"The Overnight Layoff":"early","Grid Revolt":"early","The Wealth Divide":"early","AI Startup Explosion":"early","Pathogen Blueprint":"mid","Deceptive Alignment":"mid","Government AI Failure":"mid","The Care Pivot":"mid","Scientific Breakthrough":"mid","Allied AI Pact":"late","Deepfake Election":"late","RSP Crisis":"late"};
+const EVENT_ERAS = {
+  // Original
+  "The Overnight Layoff":"early","Grid Revolt":"early","The Wealth Divide":"early","AI Startup Explosion":"early",
+  "Pathogen Blueprint":"mid","Deceptive Alignment":"mid","Government AI Failure":"mid","The Care Pivot":"mid","Scientific Breakthrough":"mid",
+  "Allied AI Pact":"late","Deepfake Election":"late","RSP Crisis":"late",
+  // Labour
+  "The 4-Day Week Vote":"early","White-Collar Displacement":"early","Gig Economy AI Expansion":"mid",
+  "Creative Industries Upheaval":"mid","Teacher AI Backlash":"mid","Union AI Bargaining Rights":"late",
+  // Safety
+  "Autonomous Weapons Leak":"mid","Model Self-Replication":"late","Medical AI Malpractice":"mid",
+  // Governance
+  "Supreme Court AI Ruling":"mid","AI Lobbying Scandal":"mid","Algorithmic Bias Class Action":"early",
+  "Open-Source Model Rights":"late","State Regulatory Patchwork":"early",
+  // Economy
+  "AI Monopoly Antitrust":"mid","Housing Market AI Disruption":"early","Agricultural AI Revolution":"mid",
+  "Pharmaceutical AI Breakthrough":"late","Retail Automation Wave":"early",
+  // Geopolitics
+  "AI Arms Race Escalation":"late","Developing Nation AI Leapfrog":"mid","Cross-Border Data Flow Treaty":"late",
+  "AI Espionage Scandal":"mid","Global South AI Coalition":"late","Allied Chip Export Crisis":"early",
+  // Science
+  "Fusion-AI Breakthrough":"late","AI Weather Prediction":"early","Protein Folding Cascade":"mid","AI Materials Discovery":"mid",
+  // Superintelligence
+  "The Alignment Test":"late",
+};
 function pickWeightedEvent(pool, round) {
   const era = round <= 2 ? "early" : round <= 5 ? "mid" : "late";
   // Weight matching-era events 3x, others 1x
