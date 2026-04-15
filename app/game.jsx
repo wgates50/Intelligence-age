@@ -682,15 +682,15 @@ const phaseCSS = `
 const T={bg:"#F8F6F1",sf:"#FFFFFF",sa:"#F2F0EB",bd:"#E2DFD8",tx:"#1A1A1A",t2:"#5C5852",tm:"#8A857C",tf:"#B5B0A7",ac:"#2563EB",gd:"#16A34A",gb:"#F0FDF4",wn:"#CA8A04",wb:"#FEFCE8",bad:"#DC2626",bb:"#FEF2F2"};
 const S={
   pg:{minHeight:"100vh",background:T.bg,color:T.tx,fontFamily:"'Outfit',sans-serif"},
-  in:{maxWidth:780,margin:"0 auto",padding:"28px 20px"},
-  cd:{background:T.sf,border:`1px solid ${T.bd}`,borderRadius:14,padding:20,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"},
+  in:{maxWidth:1100,margin:"0 auto",padding:"32px 28px"},
+  cd:{background:T.sf,border:`1px solid ${T.bd}`,borderRadius:14,padding:24,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"},
   hl:{fontFamily:"'Newsreader',serif",fontWeight:800,lineHeight:1.15,color:T.tx},
   mn:{fontFamily:"'JetBrains Mono',monospace"},
-  lb:{fontSize:10,letterSpacing:"0.22em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace",color:T.tm},
-  bt:{border:"none",borderRadius:10,padding:"13px 28px",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"'Outfit',sans-serif",transition:"all 0.15s"},
+  lb:{fontSize:13,letterSpacing:"0.22em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace",color:T.tm},
+  bt:{border:"none",borderRadius:10,padding:"15px 32px",fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"'Outfit',sans-serif",transition:"all 0.15s"},
 };
 const catCol={LABOUR:"#C05621",INFRASTRUCTURE:"#CA8A04",SAFETY:"#DC2626",ECONOMY:"#16A34A",GOVERNANCE:"#0891B2",GEOPOLITICS:"#4F46E5",SCIENCE:"#C026D3",SUPERINTELLIGENCE:"#DC2626"};
-const grd = (min) => ({display:"grid",gridTemplateColumns:`repeat(auto-fill,minmax(${min}px,1fr))`,gap:8});
+const grd = (min) => ({display:"grid",gridTemplateColumns:`repeat(auto-fill,minmax(${min}px,1fr))`,gap:12});
 
 // ── SOUND SYSTEM (Tone.js) ──
 let audioCtx = null;
@@ -748,7 +748,7 @@ function AnimNum({value, prev, color}) {
     ref.current = requestAnimationFrame(tick);
     return () => { if (ref.current) cancelAnimationFrame(ref.current); };
   }, [value, prev]);
-  return <span className="count-anim" style={{...S.mn,fontSize:12,fontWeight:600,color}}>{display}</span>;
+  return <span className="count-anim" style={{...S.mn,fontSize:15,fontWeight:600,color}}>{display}</span>;
 }
 
 // Tooltip on hover
@@ -758,7 +758,7 @@ function Tip({text, children}) {
     <span style={{position:"relative",display:"inline-block"}} onMouseEnter={()=>setShow(true)} onMouseLeave={()=>setShow(false)}>
       {children}
       {show && text && (
-        <div style={{position:"absolute",bottom:"calc(100% + 6px)",left:"50%",transform:"translateX(-50%)",background:"#1A1A1A",color:"#E2DFD8",fontSize:11,lineHeight:1.5,padding:"6px 10px",borderRadius:8,whiteSpace:"normal",width:220,zIndex:50,boxShadow:"0 4px 12px rgba(0,0,0,0.2)",pointerEvents:"none"}}>
+        <div style={{position:"absolute",bottom:"calc(100% + 6px)",left:"50%",transform:"translateX(-50%)",background:"#1A1A1A",color:"#E2DFD8",fontSize:13,lineHeight:1.5,padding:"8px 12px",borderRadius:8,whiteSpace:"normal",width:260,zIndex:50,boxShadow:"0 4px 12px rgba(0,0,0,0.2)",pointerEvents:"none"}}>
           {text}
         </div>
       )}
@@ -767,7 +767,7 @@ function Tip({text, children}) {
 }
 
 // PHASE 4: Sparkline component
-function Sparkline({data, color, width=60, height=20}) {
+function Sparkline({data, color, width=80, height=24}) {
   if (!data || data.length < 2) return null;
   const min = Math.min(...data), max = Math.max(...data);
   const range = max - min || 1;
@@ -781,23 +781,23 @@ function Sparkline({data, color, width=60, height=20}) {
 function MetricBar({metric,value,prev,history:hist}){
   const d=value-prev,col=value>=60?T.gd:value>=40?T.wn:T.bad;
   const tips={"growth":"Measures overall economic output and productivity gains from AI adoption.","equality":"How evenly prosperity is distributed. Drops when growth benefits few.","trust":"Public confidence in institutions and AI governance. Eroded by scandals and secrecy.","safety_score":"Containment capacity for frontier AI risks including CBRN threats.","innovation":"New businesses, R&D output, scientific breakthroughs. Decays without investment.","wellbeing":"Worker quality of life — job security, benefits, work-life balance.","geopolitics":"International influence, alliance strength, and coordination capacity."};
-  return(<div style={{marginBottom:9}}>
+  return(<div style={{marginBottom:12}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}>
-      <Tip text={tips[metric.id]}><span style={{fontSize:13,color:T.t2,fontWeight:500,cursor:"help",borderBottom:`1px dotted ${T.bd}`}}>{metric.icon} {metric.label}</span></Tip>
+      <Tip text={tips[metric.id]}><span style={{fontSize:16,color:T.t2,fontWeight:500,cursor:"help",borderBottom:`1px dotted ${T.bd}`}}>{metric.icon} {metric.label}</span></Tip>
       <span style={{display:"flex",alignItems:"center",gap:4}}>
         {hist && <Sparkline data={hist} color={col} />}
         <AnimNum value={value} prev={prev} color={d>0?T.gd:d<0?T.bad:T.tm}/>
-        {d!==0&&<span style={{...S.mn,fontSize:10,color:d>0?T.gd:T.bad}}>({d>0?"+":""}{d})</span>}
+        {d!==0&&<span style={{...S.mn,fontSize:12,color:d>0?T.gd:T.bad}}>({d>0?"+":""}{d})</span>}
       </span>
     </div>
-    <div style={{height:7,background:T.sa,borderRadius:4,overflow:"hidden",border:`1px solid ${T.bd}`}}>
+    <div style={{height:10,background:T.sa,borderRadius:4,overflow:"hidden",border:`1px solid ${T.bd}`}}>
       <div style={{height:"100%",width:`${value}%`,background:col,borderRadius:3,transition:"width 0.8s ease"}}/>
     </div>
   </div>);
 }
 
 function Btn({children,onClick,disabled,color,style:sx}){return(<button style={{...S.bt,background:disabled?T.sa:(color||T.ac),color:disabled?T.tf:"#fff",cursor:disabled?"not-allowed":"pointer",boxShadow:disabled?"none":`0 2px 8px ${(color||T.ac)}33`,...sx}} onClick={disabled?undefined:onClick} onMouseOver={e=>!disabled&&(e.target.style.transform="translateY(-2px)")} onMouseOut={e=>e.target.style.transform=""}>{children}</button>);}
-function Timeline({round}){const pct=(round/ROUNDS)*100,ls=["Narrow AI","General Agents","Expert Systems","Pre-Super","Superintelligence"];return(<div style={{...S.cd,padding:"10px 16px",marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><span style={S.lb}>AI CAPABILITY</span><span style={{...S.mn,fontSize:11,fontWeight:600,color:T.bad}}>{ls[Math.min(Math.floor(round/2),4)]}</span></div><div style={{height:5,background:T.sa,borderRadius:3,overflow:"hidden",border:`1px solid ${T.bd}`}}><div style={{height:"100%",width:`${pct}%`,borderRadius:2,background:"linear-gradient(90deg,#2563EB,#7C3AED,#DC2626)",transition:"width 1s ease"}}/></div></div>);}
+function Timeline({round}){const pct=(round/ROUNDS)*100,ls=["Narrow AI","General Agents","Expert Systems","Pre-Super","Superintelligence"];return(<div style={{...S.cd,padding:"10px 16px",marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><span style={S.lb}>AI CAPABILITY</span><span style={{...S.mn,fontSize:13,fontWeight:600,color:T.bad}}>{ls[Math.min(Math.floor(round/2),4)]}</span></div><div style={{height:8,background:T.sa,borderRadius:3,overflow:"hidden",border:`1px solid ${T.bd}`}}><div style={{height:"100%",width:`${pct}%`,borderRadius:2,background:"linear-gradient(90deg,#2563EB,#7C3AED,#DC2626)",transition:"width 1s ease"}}/></div></div>);}
 
 // Glossary popup
 function InfoButton({term}) {
@@ -805,11 +805,11 @@ function InfoButton({term}) {
   const def = GLOSSARY[term];
   if (!def) return null;
   return (<span style={{position:"relative",display:"inline-block"}}>
-    <button onClick={(e)=>{e.stopPropagation();setOpen(!open);}} style={{background:"none",border:`1px solid ${T.bd}`,borderRadius:4,padding:"0 4px",fontSize:10,color:T.ac,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",lineHeight:"16px",verticalAlign:"middle",marginLeft:3}}>?</button>
+    <button onClick={(e)=>{e.stopPropagation();setOpen(!open);}} style={{background:"none",border:`1px solid ${T.bd}`,borderRadius:4,padding:"0 4px",fontSize:12,color:T.ac,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",lineHeight:"16px",verticalAlign:"middle",marginLeft:3}}>?</button>
     {open && <div onClick={e=>e.stopPropagation()} style={{position:"absolute",bottom:"calc(100% + 8px)",left:"50%",transform:"translateX(-50%)",width:320,background:T.sf,border:`1px solid ${T.bd}`,borderRadius:12,padding:14,boxShadow:"0 8px 24px rgba(0,0,0,0.12)",zIndex:100,textAlign:"left"}}>
-      <div style={{...S.mn,fontSize:11,fontWeight:600,color:T.ac,marginBottom:4}}>{term}</div>
-      <div style={{fontSize:12,color:T.t2,lineHeight:1.6}}>{def}</div>
-      <button onClick={()=>setOpen(false)} style={{...S.bt,fontSize:10,padding:"4px 10px",background:T.sa,color:T.tm,border:`1px solid ${T.bd}`,marginTop:8}}>Close</button>
+      <div style={{...S.mn,fontSize:13,fontWeight:600,color:T.ac,marginBottom:4}}>{term}</div>
+      <div style={{fontSize:14,color:T.t2,lineHeight:1.6}}>{def}</div>
+      <button onClick={()=>setOpen(false)} style={{...S.bt,fontSize:13,padding:"4px 10px",background:T.sa,color:T.tm,border:`1px solid ${T.bd}`,marginTop:8}}>Close</button>
     </div>}
   </span>);
 }
@@ -1215,7 +1215,7 @@ export default function Phase4() {
         </div>
 
         <div className="fu" style={{animationDelay:"0.2s"}}>
-          <div style={{...S.lb,color:T.ac,marginBottom:8,letterSpacing:"0.35em",fontSize:11}}>POLICY SIMULATION</div>
+          <div style={{...S.lb,color:T.ac,marginBottom:8,letterSpacing:"0.35em",fontSize:13}}>POLICY SIMULATION</div>
         </div>
         <h1 className="fu" style={{...S.hl,fontSize:48,marginBottom:8,animationDelay:"0.3s"}}>The Intelligence Age</h1>
         <p className="fu" style={{fontSize:15,color:T.t2,maxWidth:520,margin:"0 auto 24px",lineHeight:1.75,animationDelay:"0.4s"}}>
@@ -1236,8 +1236,8 @@ export default function Phase4() {
               }}>
                 <div style={{fontSize:14,fontWeight:700,color:difficulty===d.id?T.ac:T.tx,marginBottom:2}}>{d.label}</div>
                 <div style={{...S.mn,fontSize:20,fontWeight:700,color:difficulty===d.id?T.ac:T.tm}}>{d.pts}</div>
-                <div style={{fontSize:9,color:T.tm}}>pts/round</div>
-                <div style={{fontSize:10,color:T.t2,marginTop:4,lineHeight:1.4}}>{d.desc}</div>
+                <div style={{fontSize:12,color:T.tm}}>pts/round</div>
+                <div style={{fontSize:13,color:T.t2,marginTop:4,lineHeight:1.4}}>{d.desc}</div>
               </button>
             ))}
           </div>
@@ -1256,25 +1256,25 @@ export default function Phase4() {
                 transition:"all 0.2s",
               }}>
                 <div style={{fontSize:24}}>{c.flag}</div>
-                <div style={{fontSize:11,fontWeight:700,color:country===c.id?T.ac:T.tx,marginTop:2}}>{c.label}</div>
-                <div style={{fontSize:9,color:T.tm,lineHeight:1.3,marginTop:3}}>{c.desc.split(".")[0]}.</div>
+                <div style={{fontSize:13,fontWeight:700,color:country===c.id?T.ac:T.tx,marginTop:2}}>{c.label}</div>
+                <div style={{fontSize:12,color:T.tm,lineHeight:1.3,marginTop:3}}>{c.desc.split(".")[0]}.</div>
               </button>
             ))}
           </div>
           {cty && (
             <div style={{...S.cd,marginTop:8,padding:"8px 14px",textAlign:"left",background:T.sa}}>
-              <div style={{fontSize:11,color:T.t2,fontStyle:"italic",marginBottom:4}}>{cty.flavour}</div>
+              <div style={{fontSize:13,color:T.t2,fontStyle:"italic",marginBottom:4}}>{cty.flavour}</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
                 {METRICS.map(m => {
                   const v = cty.start[m.id];
                   const col = v>=55?T.gd:v>=40?T.wn:T.bad;
-                  return <span key={m.id} style={{...S.mn,fontSize:9,color:col}}>{m.icon}{v}</span>;
+                  return <span key={m.id} style={{...S.mn,fontSize:12,color:col}}>{m.icon}{v}</span>;
                 })}
               </div>
               <div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>
                 {POLICIES.filter(p=>(cty.modifiers[p.id]||1)!==1).map(p=>{
                   const mod=cty.modifiers[p.id]||1;
-                  return <span key={p.id} style={{...S.mn,fontSize:9,color:mod>1?T.gd:T.bad}}>{p.icon}{mod>1?"+":"−"}{Math.round(Math.abs(mod-1)*100)}%</span>;
+                  return <span key={p.id} style={{...S.mn,fontSize:12,color:mod>1?T.gd:T.bad}}>{p.icon}{mod>1?"+":"−"}{Math.round(Math.abs(mod-1)*100)}%</span>;
                 })}
               </div>
             </div>
@@ -1289,13 +1289,13 @@ export default function Phase4() {
           }}>
             {weeklyMode ? `📅 Weekly Challenge: ${getWeekLabel(getWeeklySeed())} ✓` : "📅 Enable Weekly Challenge"}
           </button>
-          {weeklyMode && <div style={{...S.mn,fontSize:10,color:"#7C3AED",marginTop:4}}>Same events for everyone this week. Compare strategies.</div>}
+          {weeklyMode && <div style={{...S.mn,fontSize:13,color:"#7C3AED",marginTop:4}}>Same events for everyone this week. Compare strategies.</div>}
         </div>
 
         {/* Feature pills */}
         <div className="fu" style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:6,maxWidth:600,margin:"0 auto 24px",animationDelay:"0.7s"}}>
           {[{i:"🔗",l:"Event Chains"},{i:"📜",l:"History Cards"},{i:"🔓",l:"Policy Trees"},{i:"⚒",l:"Factions"},{i:"🎯",l:"Quests"},{i:"📈",l:"Sparklines"},{i:"🔒",l:"Locked Choices"}].map(f=>(
-            <div key={f.l} style={{background:T.sf,border:`1px solid ${T.bd}`,borderRadius:8,padding:"4px 12px",fontSize:11,fontWeight:600,color:T.tx,display:"flex",alignItems:"center",gap:4}}>
+            <div key={f.l} style={{background:T.sf,border:`1px solid ${T.bd}`,borderRadius:8,padding:"4px 12px",fontSize:13,fontWeight:600,color:T.tx,display:"flex",alignItems:"center",gap:4}}>
               <span>{f.i}</span>{f.l}
             </div>
           ))}
@@ -1331,7 +1331,7 @@ export default function Phase4() {
         )}
 
         <div className="fu" style={{animationDelay:"1.1s",marginTop:12}}>
-          <span style={{...S.mn,fontSize:10,color:T.tf}}>Based on OpenAI · Anthropic RSP · WEF · White House AI Action Plan</span>
+          <span style={{...S.mn,fontSize:13,color:T.tf}}>Based on OpenAI · Anthropic RSP · WEF · White House AI Action Plan</span>
         </div>
       </div>
     </div>
@@ -1341,7 +1341,7 @@ export default function Phase4() {
   if (phase === "allocate") return (
     <div style={S.pg}><style>{fonts}{phaseCSS}</style><div ref={topRef}/><div className="phase-enter" style={S.in}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-        <div><div style={{...S.lb,marginBottom:3}}>{cty?.flag||""} YEAR {year} — {endlessMode?`ENDLESS ROUND ${round-ROUNDS+1}`:` ROUND ${round+1}/${ROUNDS}`} · {diff.label.toUpperCase()}{weeklyMode?" · WEEKLY":""}</div><h2 style={{...S.hl,fontSize:26,margin:0}}>Allocate Resources</h2>{endlessMode&&<div style={{fontSize:11,color:T.bad,marginTop:2}}>⚠ Endless mode — collapse when any metric hits 0 or avg drops below 20</div>}{cty&&<div style={{fontSize:11,color:T.tm,marginTop:1}}>{cty.flavour}</div>}</div>
+        <div><div style={{...S.lb,marginBottom:3}}>{cty?.flag||""} YEAR {year} — {endlessMode?`ENDLESS ROUND ${round-ROUNDS+1}`:` ROUND ${round+1}/${ROUNDS}`} · {diff.label.toUpperCase()}{weeklyMode?" · WEEKLY":""}</div><h2 style={{...S.hl,fontSize:26,margin:0}}>Allocate Resources</h2>{endlessMode&&<div style={{fontSize:13,color:T.bad,marginTop:2}}>⚠ Endless mode — collapse when any metric hits 0 or avg drops below 20</div>}{cty&&<div style={{fontSize:13,color:T.tm,marginTop:1}}>{cty.flavour}</div>}</div>
         <div style={{textAlign:"center",background:pointsLeft===0?T.gb:T.sf,border:`1px solid ${pointsLeft===0?"#BBF7D0":T.bd}`,borderRadius:12,padding:"6px 16px"}}>
           <div style={{...S.mn,fontSize:26,fontWeight:700,color:pointsLeft===0?T.gd:T.tx}}>{pointsLeft}</div>
           <div style={{...S.lb,fontSize:8}}>{bonusPoints>0?`${basePts}+${bonusPoints}`:"PTS LEFT"}</div>
@@ -1349,28 +1349,28 @@ export default function Phase4() {
       </div>
       <Timeline round={round}/>
       {lastRound && (<div style={{...S.cd,padding:"10px 14px",marginBottom:10,borderColor:lastRound.isGood?"#BBF7D0":lastRound.isGood===false?"#FECACA":T.bd,background:lastRound.isGood?T.gb:lastRound.isGood===false?T.bb:T.sa}}>
-        <div style={{...S.lb,fontSize:8,marginBottom:3}}>LAST YEAR: {lastRound.eventTitle}</div>
+        <div style={{...S.lb,fontSize:13,marginBottom:3}}>LAST YEAR: {lastRound.eventTitle}</div>
         <div style={{fontSize:12,color:T.t2,lineHeight:1.5}}>{lastRound.narrative}</div>
       </div>)}
       {/* Faction consequences from last round */}
       {factionMsg.length > 0 && (<div style={{...S.cd,padding:"10px 14px",marginBottom:10,borderColor:factionMsg[0].type==="bonus"?"#BBF7D0":"#FECACA",background:factionMsg[0].type==="bonus"?T.gb:T.bb}}>
-        <div style={{...S.lb,fontSize:8,marginBottom:4}}>{factionMsg[0].type==="bonus"?"✓":"⚠"} FACTION CONSEQUENCES</div>
+        <div style={{...S.lb,fontSize:13,marginBottom:4}}>{factionMsg[0].type==="bonus"?"✓":"⚠"} FACTION CONSEQUENCES</div>
         {factionMsg.map((m,i) => <div key={i} style={{fontSize:12,color:T.t2,marginBottom:2}}>{m.icon} <strong style={{color:m.color}}>{m.faction}:</strong> {m.msg}</div>)}
       </div>)}
       {upcomingChains.length>0&&(<div style={{...S.cd,padding:"8px 12px",marginBottom:10,borderColor:"#FDE68A",background:T.wb}}>
-        <div style={{...S.lb,fontSize:8,color:T.wn}}>⏳ {upcomingChains.length} consequence{upcomingChains.length>1?"s":""} approaching</div>
+        <div style={{...S.lb,fontSize:13,color:T.wn}}>⏳ {upcomingChains.length} consequence{upcomingChains.length>1?"s":""} approaching</div>
       </div>)}
       {/* FACTION DEMAND */}
       {factionDemand && (
         <div style={{...S.cd,padding:"12px 14px",marginBottom:10,borderColor:factionDemand.faction.color+"55",background:factionDemand.faction.color+"08"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-            <div style={{...S.lb,fontSize:9,color:factionDemand.faction.color}}>{factionDemand.faction.icon} FACTION DEMAND</div>
-            <span style={{...S.mn,fontSize:10,color:T.tm}}>{factionDemand.faction.name}</span>
+            <div style={{...S.lb,fontSize:12,color:factionDemand.faction.color}}>{factionDemand.faction.icon} FACTION DEMAND</div>
+            <span style={{...S.mn,fontSize:13,color:T.tm}}>{factionDemand.faction.name}</span>
           </div>
           <div style={{fontSize:13,color:T.tx,fontWeight:600,marginBottom:4}}>
             Invest {factionDemand.amount}+ in {POLICIES.find(p=>p.id===factionDemand.policy)?.icon} {POLICIES.find(p=>p.id===factionDemand.policy)?.label} this round
           </div>
-          <div style={{display:"flex",gap:12,fontSize:11}}>
+          <div style={{display:"flex",gap:12,fontSize:13}}>
             <span style={{color:T.gd}}>✓ {factionDemand.rewardMsg.split(".")[0]}</span>
             <span style={{color:T.bad}}>✗ {factionDemand.penaltyMsg.split(".")[0]}</span>
           </div>
@@ -1379,16 +1379,16 @@ export default function Phase4() {
       {/* ADVISOR MISSIONS */}
       {advisorMissions.length > 0 && (
         <div style={{...S.cd,padding:"10px 14px",marginBottom:10,borderColor:"#C7D2FE",background:"#EFF4FF"}}>
-          <div style={{...S.lb,fontSize:9,color:T.ac,marginBottom:6}}>🎯 ADVISOR MISSIONS THIS ROUND</div>
+          <div style={{...S.lb,fontSize:12,color:T.ac,marginBottom:6}}>🎯 ADVISOR MISSIONS THIS ROUND</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
             {advisorMissions.map(m => {
               const met = (alloc[m.policy]||0) >= m.amount;
               return (
                 <div key={m.advisor.id} style={{flex:"1 1 140px",background:met?T.gb:T.sf,border:`1px solid ${met?"#BBF7D0":T.bd}`,borderRadius:10,padding:"8px 10px"}}>
                   <div style={{fontSize:12,fontWeight:600,color:m.advisor.color}}>{m.advisor.avatar} {m.advisor.name}</div>
-                  <div style={{fontSize:11,color:T.tx,marginTop:2}}>{POLICIES.find(p=>p.id===m.policy)?.icon} {m.policyLabel} ≥ {m.amount}</div>
-                  <div style={{fontSize:10,color:T.tm,marginTop:1,fontStyle:"italic"}}>{m.reason}</div>
-                  <div style={{...S.mn,fontSize:10,marginTop:3,color:met?T.gd:T.tm}}>{met?"✓ Met":"○ Not met"}</div>
+                  <div style={{fontSize:13,color:T.tx,marginTop:2}}>{POLICIES.find(p=>p.id===m.policy)?.icon} {m.policyLabel} ≥ {m.amount}</div>
+                  <div style={{fontSize:13,color:T.tm,marginTop:1,fontStyle:"italic"}}>{m.reason}</div>
+                  <div style={{...S.mn,fontSize:13,marginTop:3,color:met?T.gd:T.tm}}>{met?"✓ Met":"○ Not met"}</div>
                 </div>
               );
             })}
@@ -1397,7 +1397,7 @@ export default function Phase4() {
       )}
       {/* ── NATIONAL METRICS — redesigned ── */}
       <div style={{...S.cd,padding:"14px 16px",marginBottom:10}}>
-        <div style={{...S.lb,fontSize:9,marginBottom:8}}>NATIONAL METRICS</div>
+        <div style={{...S.lb,fontSize:12,marginBottom:8}}>NATIONAL METRICS</div>
         {METRICS.map(m => {
           const v = metrics[m.id], hist = metricHistory.map(h => h[m.id]);
           const prev = metricHistory.length > 1 ? metricHistory[metricHistory.length-2][m.id] : v;
@@ -1429,19 +1429,19 @@ export default function Phase4() {
               )}
               <div style={{width:52,textAlign:"right",flexShrink:0}}>
                 <div style={{...S.mn,fontSize:16,fontWeight:700,color:col}}>{v}</div>
-                {d !== 0 && <div style={{...S.mn,fontSize:10,color:d>0?T.gd:T.bad}}>{d>0?"+":""}{d}</div>}
+                {d !== 0 && <div style={{...S.mn,fontSize:13,color:d>0?T.gd:T.bad}}>{d>0?"+":""}{d}</div>}
               </div>
             </div>
           );
         })}
       </div>
       {tier2Unlocked.length>0&&(<div style={{...S.cd,padding:"8px 12px",marginBottom:10,borderColor:"#BBF7D0",background:T.gb}}>
-        <div style={{...S.lb,fontSize:8,color:T.gd,marginBottom:3}}>🔓 TIER-2 ACTIVE</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:4}}>{tier2Unlocked.map(t=><span key={t.name} style={{...S.mn,fontSize:9,background:"#DCFCE7",border:"1px solid #BBF7D0",borderRadius:6,padding:"2px 6px",color:"#15803D"}}>{t.name}<InfoButton term={t.name}/></span>)}</div>
+        <div style={{...S.lb,fontSize:13,color:T.gd,marginBottom:3}}>🔓 TIER-2 ACTIVE</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:4}}>{tier2Unlocked.map(t=><span key={t.name} style={{...S.mn,fontSize:12,background:"#DCFCE7",border:"1px solid #BBF7D0",borderRadius:6,padding:"2px 6px",color:"#15803D"}}>{t.name}<InfoButton term={t.name}/></span>)}</div>
       </div>)}
       {/* ── FACTIONS — always visible ── */}
       <div style={{...S.cd,padding:"10px 14px",marginBottom:10}}>
-        <div style={{...S.lb,fontSize:9,marginBottom:6}}>FACTIONS</div>
+        <div style={{...S.lb,fontSize:12,marginBottom:6}}>FACTIONS</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
           {factions.map(f => {
             const s = factionSat[f.id]||50;
@@ -1450,11 +1450,11 @@ export default function Phase4() {
             return (
               <div key={f.id} style={{flex:"1 1 80px",background:T.sf,border:`1px solid ${sc}33`,borderRadius:10,padding:"8px 10px",textAlign:"center"}}>
                 <div style={{fontSize:16}}>{f.icon}</div>
-                <div style={{fontSize:10,fontWeight:700,color:f.color,marginBottom:2}}>{f.name}</div>
+                <div style={{fontSize:13,fontWeight:700,color:f.color,marginBottom:2}}>{f.name}</div>
                 <div style={{height:5,background:T.sa,borderRadius:3,overflow:"hidden",marginBottom:2}}>
                   <div style={{height:"100%",width:`${s}%`,background:sc,borderRadius:2,transition:"width 0.5s"}}/>
                 </div>
-                <div style={{...S.mn,fontSize:10,fontWeight:600,color:sc}}>{Math.round(s)} <span style={{fontSize:8,fontWeight:400}}>{label}</span></div>
+                <div style={{...S.mn,fontSize:13,fontWeight:600,color:sc}}>{Math.round(s)} <span style={{fontSize:13,fontWeight:400}}>{label}</span></div>
               </div>
             );
           })}
@@ -1462,7 +1462,7 @@ export default function Phase4() {
       </div>
       {/* ── ADVISORS + MISSIONS — always visible ── */}
       <div style={{...S.cd,padding:"10px 14px",marginBottom:10}}>
-        <div style={{...S.lb,fontSize:9,marginBottom:6}}>ADVISORS & MISSIONS</div>
+        <div style={{...S.lb,fontSize:12,marginBottom:6}}>ADVISORS & MISSIONS</div>
         <div style={grd(200)}>
           {ADVISORS.map(a => {
             const qp = questProgress[a.id]||0;
@@ -1473,23 +1473,23 @@ export default function Phase4() {
                 <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
                   <span style={{fontSize:16}}>{a.avatar}</span>
                   <div>
-                    <div style={{fontSize:11,fontWeight:700,color:a.color}}>{a.name}</div>
+                    <div style={{fontSize:13,fontWeight:700,color:a.color}}>{a.name}</div>
                     <div style={{...S.lb,fontSize:7}}>{a.philosophy}</div>
                   </div>
                 </div>
-                <div style={{fontSize:10,color:T.t2,lineHeight:1.4,marginBottom:5}}>{a.getAdvice(round,metrics,cumulative)}</div>
+                <div style={{fontSize:13,color:T.t2,lineHeight:1.4,marginBottom:5}}>{a.getAdvice(round,metrics,cumulative)}</div>
                 {mission && (
                   <div style={{background:missionMet?T.gb:T.sa,border:`1px solid ${missionMet?"#BBF7D0":T.bd}`,borderRadius:6,padding:"5px 7px",marginBottom:4}}>
-                    <div style={{fontSize:10,fontWeight:600,color:missionMet?T.gd:T.tx}}>
+                    <div style={{fontSize:13,fontWeight:600,color:missionMet?T.gd:T.tx}}>
                       {missionMet?"✓":"○"} {POLICIES.find(p=>p.id===mission.policy)?.icon} {mission.policyLabel} ≥ {mission.amount}
                     </div>
-                    <div style={{fontSize:9,color:T.tm,fontStyle:"italic"}}>{mission.reason}</div>
+                    <div style={{fontSize:12,color:T.tm,fontStyle:"italic"}}>{mission.reason}</div>
                   </div>
                 )}
                 <div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <div style={{...S.mn,fontSize:8,color:qp>=3?T.gd:T.tm}}>Quest: {a.questLabel}</div>
+                  <div style={{...S.mn,fontSize:13,color:qp>=3?T.gd:T.tm}}>Quest: {a.questLabel}</div>
                   <div style={{display:"flex",gap:2}}>{[0,1,2].map(i=>(<div key={i} style={{width:12,height:3,borderRadius:1,background:i<qp?a.color:T.bd}}/>))}</div>
-                  {qp>=3&&<span style={{fontSize:8,color:T.gd}}>✓</span>}
+                  {qp>=3&&<span style={{fontSize:13,color:T.gd}}>✓</span>}
                 </div>
               </div>
             );
@@ -1498,9 +1498,9 @@ export default function Phase4() {
       </div>
       {/* Glossary toggle only */}
       <div style={{textAlign:"center",marginBottom:10}}>
-        <button onClick={()=>setShowGlossary(!showGlossary)} style={{...S.bt,background:T.sa,color:T.t2,border:`1px solid ${T.bd}`,padding:"6px 16px",fontSize:11}}>📖 {showGlossary?"Hide":"Show"} Glossary</button>
+        <button onClick={()=>setShowGlossary(!showGlossary)} style={{...S.bt,background:T.sa,color:T.t2,border:`1px solid ${T.bd}`,padding:"6px 16px",fontSize:13}}>📖 {showGlossary?"Hide":"Show"} Glossary</button>
       </div>
-      {showGlossary&&(<div style={{...S.cd,marginBottom:10,maxHeight:200,overflowY:"auto",padding:14}}>{Object.entries(GLOSSARY).slice(0,6).map(([k,v])=>(<div key={k} style={{marginBottom:8}}><span style={{...S.mn,fontSize:10,fontWeight:600,color:T.ac}}>{k}</span><span style={{fontSize:11,color:T.t2,marginLeft:6}}>{v.slice(0,80)}…</span></div>))}<div style={{fontSize:10,color:T.tm}}>Full glossary available on intro screen</div></div>)}
+      {showGlossary&&(<div style={{...S.cd,marginBottom:10,maxHeight:200,overflowY:"auto",padding:14}}>{Object.entries(GLOSSARY).slice(0,6).map(([k,v])=>(<div key={k} style={{marginBottom:8}}><span style={{...S.mn,fontSize:13,fontWeight:600,color:T.ac}}>{k}</span><span style={{fontSize:13,color:T.t2,marginLeft:6}}>{v.slice(0,80)}…</span></div>))}<div style={{fontSize:13,color:T.tm}}>Full glossary available on intro screen</div></div>)}
       {/* Policies */}
       <div style={grd(250)}>
         {POLICIES.map(p => {
@@ -1513,23 +1513,23 @@ export default function Phase4() {
               <Tip text={p.t2.info}><span style={{fontSize:12,fontWeight:600,cursor:"help"}}>{p.icon} {p.label}</span></Tip>
               <span style={{...S.mn,fontSize:16,fontWeight:700,color:v>0?p.color:T.tf}}>{v}</span>
             </div>
-            <div style={{fontSize:10,color:T.tm,marginBottom:5,lineHeight:1.3}}>{p.desc}</div>
+            <div style={{fontSize:13,color:T.tm,marginBottom:5,lineHeight:1.3}}>{p.desc}</div>
             <div style={{display:"flex",gap:5,marginBottom:4}}>
               <button onClick={()=>adjust(p.id,-1)} style={{...S.bt,flex:1,padding:"4px 0",background:T.sa,color:T.t2,fontSize:14,border:`1px solid ${T.bd}`}}>−</button>
               <button onClick={()=>adjust(p.id,1)} style={{...S.bt,flex:1,padding:"4px 0",background:p.color+"10",color:p.color,fontSize:14,border:`1px solid ${p.color}33`}}>+</button>
             </div>
             <div style={{display:"flex",gap:3,justifyContent:"center",marginBottom:2}}>{[0,1,2,3,4,5].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:i<v?p.color:T.bd}}/>)}</div>
-            <div style={{...S.mn,fontSize:8,color:t2Done?T.gd:T.tf,textAlign:"center"}}>{t2Done?`🔓 ${p.t2.name}`:`${cv}/${p.t2.thresh} → ${p.t2.name}`}</div>
-            {inSynergy && <div style={{...S.mn,fontSize:8,color:T.gd,textAlign:"center",marginTop:2}}>⚡ {policySynergies.map(s=>s.label).join(", ")}</div>}
+            <div style={{...S.mn,fontSize:13,color:t2Done?T.gd:T.tf,textAlign:"center"}}>{t2Done?`🔓 ${p.t2.name}`:`${cv}/${p.t2.thresh} → ${p.t2.name}`}</div>
+            {inSynergy && <div style={{...S.mn,fontSize:13,color:T.gd,textAlign:"center",marginTop:2}}>⚡ {policySynergies.map(s=>s.label).join(", ")}</div>}
           </div>);
         })}
       </div>
       {activeSynergies.length>0&&(<div style={{...S.cd,padding:"8px 12px",marginTop:10,borderColor:"#BBF7D0",background:T.gb}}>
-        <div style={{display:"flex",flexWrap:"wrap",gap:4}}>{activeSynergies.map(s=><span key={s.label} style={{...S.mn,fontSize:9,background:"#DCFCE7",border:"1px solid #BBF7D0",borderRadius:6,padding:"2px 6px",color:"#15803D"}}>⚡ {s.label}</span>)}</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:4}}>{activeSynergies.map(s=><span key={s.label} style={{...S.mn,fontSize:12,background:"#DCFCE7",border:"1px solid #BBF7D0",borderRadius:6,padding:"2px 6px",color:"#15803D"}}>⚡ {s.label}</span>)}</div>
       </div>)}
       <div style={{textAlign:"center",marginTop:12}}>
         <Btn onClick={submitAllocation} disabled={pointsLeft>0}>Commit & Face {year} →</Btn>
-        {pointsLeft>0&&<div style={{...S.mn,fontSize:11,color:T.tf,marginTop:5}}>Allocate all {pointsLeft} points</div>}
+        {pointsLeft>0&&<div style={{...S.mn,fontSize:13,color:T.tf,marginTop:5}}>Allocate all {pointsLeft} points</div>}
         {pointsLeft<totalPoints&&<button onClick={resetAlloc} style={{...S.bt,background:"transparent",color:T.tm,fontSize:12,marginTop:8,padding:"6px 16px",border:`1px solid ${T.bd}`}}>↺ Reset</button>}
       </div>
     </div></div>
@@ -1541,8 +1541,8 @@ export default function Phase4() {
       <Timeline round={round}/>
       <div style={{...S.cd,padding:0,marginBottom:16,overflow:"hidden"}}>
         <div style={{background:T.wn,padding:"8px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{...S.mn,fontSize:9,color:"#fff",letterSpacing:"0.2em",textTransform:"uppercase"}}>INTERIM CRISIS</span>
-          <span style={{...S.mn,fontSize:9,color:"rgba(255,255,255,0.7)"}}>{year} · Before main event</span>
+          <span style={{...S.mn,fontSize:12,color:"#fff",letterSpacing:"0.2em",textTransform:"uppercase"}}>INTERIM CRISIS</span>
+          <span style={{...S.mn,fontSize:12,color:"rgba(255,255,255,0.7)"}}>{year} · Before main event</span>
         </div>
         <div style={{padding:"24px 20px 16px",textAlign:"center"}}>
           <div style={{fontSize:28,marginBottom:8}}>⚡</div>
@@ -1550,7 +1550,7 @@ export default function Phase4() {
           <p style={{fontSize:14,color:T.t2,maxWidth:500,margin:"0 auto",lineHeight:1.7}}>{microEvent.text}</p>
         </div>
       </div>
-      <div style={{...S.lb,fontSize:9,marginBottom:8,textAlign:"center"}}>HOW DO YOU RESPOND?</div>
+      <div style={{...S.lb,fontSize:12,marginBottom:8,textAlign:"center"}}>HOW DO YOU RESPOND?</div>
       <div style={grd(240)}>
         {[microEvent.a, microEvent.b].map((opt, i) => (
           <button key={i} onClick={() => setMicroChoiceIdx(i)} style={{
@@ -1564,7 +1564,7 @@ export default function Phase4() {
             <div style={{fontSize:14,fontWeight:700,color:T.tx,marginBottom:4}}>{opt.label}</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
               {Object.entries(opt.fx).map(([k,v]) => (
-                <span key={k} style={{...S.mn,fontSize:10,color:v>0?T.gd:T.bad}}>
+                <span key={k} style={{...S.mn,fontSize:13,color:v>0?T.gd:T.bad}}>
                   {v>0?"+":""}{v} {METRICS.find(m=>m.id===k)?.label?.slice(0,6)||k}
                 </span>
               ))}
@@ -1586,14 +1586,14 @@ export default function Phase4() {
       <Timeline round={round}/>
       {/* Show resolved micro result if there was one */}
       {microResult&&(<div style={{...S.cd,padding:"10px 14px",marginBottom:12,borderColor:"#FDE68A",background:T.wb}}>
-        <div style={{...S.lb,fontSize:8,color:T.wn,marginBottom:3}}>⚡ INTERIM DECISION: {microResult.label}</div>
+        <div style={{...S.lb,fontSize:13,color:T.wn,marginBottom:3}}>⚡ INTERIM DECISION: {microResult.label}</div>
         <div style={{fontSize:12,color:T.t2}}>{microResult.msg}</div>
-        <div style={{display:"flex",gap:6,marginTop:4}}>{Object.entries(microResult.fx).map(([k,v])=>(<span key={k} style={{...S.mn,fontSize:10,color:v>0?T.gd:T.bad}}>{v>0?"+":""}{v} {METRICS.find(m=>m.id===k)?.label?.slice(0,6)||k}</span>))}</div>
+        <div style={{display:"flex",gap:6,marginTop:4}}>{Object.entries(microResult.fx).map(([k,v])=>(<span key={k} style={{...S.mn,fontSize:13,color:v>0?T.gd:T.bad}}>{v>0?"+":""}{v} {METRICS.find(m=>m.id===k)?.label?.slice(0,6)||k}</span>))}</div>
       </div>)}
       {/* Tier-2 unlock alert on event screen */}
       {newUnlocks.length > 0 && (
         <div style={{...S.cd,padding:"10px 14px",marginBottom:12,borderColor:"#A78BFA",background:"#F5F3FF"}}>
-          <div style={{...S.lb,fontSize:8,color:"#7C3AED",marginBottom:3}}>🔓 TIER-2 UNLOCKED THIS ROUND</div>
+          <div style={{...S.lb,fontSize:13,color:"#7C3AED",marginBottom:3}}>🔓 TIER-2 UNLOCKED THIS ROUND</div>
           {newUnlocks.map(u => (
             <div key={u.t2.name} style={{fontSize:12,color:T.t2,marginBottom:2}}>
               {u.policy.icon} <strong style={{color:"#7C3AED"}}>{u.t2.name}</strong> — {Object.entries(u.t2.passive).map(([k,v])=>`+${v} ${METRICS.find(m=>m.id===k)?.label||k}`).join(", ")} per round
@@ -1604,40 +1604,40 @@ export default function Phase4() {
       {/* Demand + mission results on event screen */}
       {demandResult && (
         <div style={{...S.cd,padding:"8px 14px",marginBottom:10,borderColor:demandResult.met?"#BBF7D0":"#FECACA",background:demandResult.met?T.gb:T.bb}}>
-          <div style={{fontSize:11,color:demandResult.met?T.gd:T.bad}}>{demandResult.met?"✓":"✗"} {demandResult.msg}</div>
+          <div style={{fontSize:13,color:demandResult.met?T.gd:T.bad}}>{demandResult.met?"✓":"✗"} {demandResult.msg}</div>
         </div>
       )}
       {missionResults.length > 0 && missionResults.some(r=>r.met) && (
         <div style={{...S.cd,padding:"8px 14px",marginBottom:10,borderColor:"#C7D2FE",background:"#EFF4FF"}}>
-          <div style={{fontSize:11,color:T.ac}}>🎯 Missions: {missionResults.filter(r=>r.met).map(r=>`${r.advisor.avatar} ✓`).join(" ")} {missionResults.filter(r=>!r.met).map(r=>`${r.advisor.avatar} ✗`).join(" ")}</div>
+          <div style={{fontSize:13,color:T.ac}}>🎯 Missions: {missionResults.filter(r=>r.met).map(r=>`${r.advisor.avatar} ✓`).join(" ")} {missionResults.filter(r=>!r.met).map(r=>`${r.advisor.avatar} ✗`).join(" ")}</div>
         </div>
       )}
       <div style={{...S.cd,padding:0,marginBottom:16,overflow:"hidden"}}>
         <div style={{background:evCol,padding:"8px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{...S.mn,fontSize:9,color:"#fff",letterSpacing:"0.2em",textTransform:"uppercase"}}>{currentEvent.category}</span>
-          <span style={{...S.mn,fontSize:9,color:"rgba(255,255,255,0.7)"}}>{cty?.flag||""} {year} · {diff.label}{weeklyMode?" · Weekly":""}</span>
+          <span style={{...S.mn,fontSize:12,color:"#fff",letterSpacing:"0.2em",textTransform:"uppercase"}}>{currentEvent.category}</span>
+          <span style={{...S.mn,fontSize:12,color:"rgba(255,255,255,0.7)"}}>{cty?.flag||""} {year} · {diff.label}{weeklyMode?" · Weekly":""}</span>
         </div>
         {isChain&&(<div style={{background:"#FEF3C7",padding:"6px 16px",borderBottom:`1px solid ${T.bd}`}}>
-          <span style={{...S.mn,fontSize:10,color:"#92400E"}}>🔗 CHAIN EVENT — consequence of an earlier decision</span>
+          <span style={{...S.mn,fontSize:13,color:"#92400E"}}>🔗 CHAIN EVENT — consequence of an earlier decision</span>
         </div>)}
         <div style={{padding:"24px 20px 16px",textAlign:"center"}}>
           <h2 style={{...S.hl,fontSize:30,marginBottom:6}}>{currentEvent.title}</h2>
           <p style={{fontSize:14,color:T.t2,maxWidth:500,margin:"0 auto",fontStyle:"italic"}}>{currentEvent.subtitle}</p>
         </div>
         <div style={{borderTop:`1px solid ${T.bd}`,padding:"12px 20px",background:T.sa}}>
-          <button onClick={()=>setShowHist(!showHist)} style={{...S.bt,padding:0,background:"transparent",color:T.tm,fontSize:11}}>
+          <button onClick={()=>setShowHist(!showHist)} style={{...S.bt,padding:0,background:"transparent",color:T.tm,fontSize:13}}>
             📜 {showHist?"Hide":"Show"} Historical Parallel: {currentEvent.hist?.title}
           </button>
-          {showHist&&currentEvent.hist&&(<div style={{marginTop:8}}><div style={{...S.mn,fontSize:9,color:evCol,marginBottom:3}}>{currentEvent.hist.era}</div><div style={{fontSize:12,color:T.t2,lineHeight:1.6}}>{currentEvent.hist.text}</div></div>)}
+          {showHist&&currentEvent.hist&&(<div style={{marginTop:8}}><div style={{...S.mn,fontSize:12,color:evCol,marginBottom:3}}>{currentEvent.hist.era}</div><div style={{fontSize:12,color:T.t2,lineHeight:1.6}}>{currentEvent.hist.text}</div></div>)}
         </div>
       </div>
       <div style={{...S.cd,padding:"8px 12px",marginBottom:14}}>
-        <div style={{...S.lb,fontSize:8,marginBottom:5}}>YOUR BUDGET</div>
+        <div style={{...S.lb,fontSize:13,marginBottom:5}}>YOUR BUDGET</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-          {POLICIES.filter(p=>(alloc[p.id]||0)>0).map(p=><span key={p.id} style={{...S.mn,fontSize:10,background:p.color+"10",border:`1px solid ${p.color}33`,borderRadius:6,padding:"2px 7px",color:p.color}}>{p.icon}{p.short}:{alloc[p.id]}</span>)}
+          {POLICIES.filter(p=>(alloc[p.id]||0)>0).map(p=><span key={p.id} style={{...S.mn,fontSize:13,background:p.color+"10",border:`1px solid ${p.color}33`,borderRadius:6,padding:"2px 7px",color:p.color}}>{p.icon}{p.short}:{alloc[p.id]}</span>)}
         </div>
       </div>
-      <div style={{...S.lb,fontSize:9,marginBottom:8,textAlign:"center"}}>CHOOSE YOUR RESPONSE</div>
+      <div style={{...S.lb,fontSize:12,marginBottom:8,textAlign:"center"}}>CHOOSE YOUR RESPONSE</div>
       <div style={grd(240)}>
         {currentEvent.choices.map((c,i) => {
           const available = isChoiceAvailable(c);
@@ -1654,12 +1654,12 @@ export default function Phase4() {
             <div style={{fontSize:12,color:T.t2,lineHeight:1.5}}>{c.desc}</div>
             {/* PHASE 4: locked choice explanation */}
             {!available && c.requires && (
-              <div style={{...S.mn,fontSize:10,color:T.bad,marginTop:8,padding:"6px 8px",background:T.bb,borderRadius:6,border:"1px solid #FECACA"}}>
+              <div style={{...S.mn,fontSize:13,color:T.bad,marginTop:8,padding:"6px 8px",background:T.bb,borderRadius:6,border:"1px solid #FECACA"}}>
                 🔒 {c.requires.lockedMsg}
                 <InfoButton term={c.requires.policy==="safety"?"ASL-4":c.requires.policy==="governance"?"CAISI":""}/>
               </div>
             )}
-            {c.chainTrigger&&available&&<div style={{...S.mn,fontSize:9,color:T.wn,marginTop:6}}>⏳ This choice will have consequences</div>}
+            {c.chainTrigger&&available&&<div style={{...S.mn,fontSize:12,color:T.wn,marginTop:6}}>⏳ This choice will have consequences</div>}
           </button>);
         })}
       </div>
@@ -1675,40 +1675,40 @@ export default function Phase4() {
       <h2 style={{...S.hl,fontSize:24,marginBottom:3}}>{currentEvent.title}</h2>
       <div style={{fontSize:12,color:T.tm,marginBottom:10}}>
         Chose: <strong style={{color:T.tx}}>{result.choiceLabel}</strong>
-        {result.tm!==1&&<span style={{...S.mn,fontSize:10,marginLeft:8,color:result.tm>1?T.gd:T.bad}}>Trust ×{result.tm.toFixed(2)}</span>}
-        {result.isChain&&<span style={{...S.mn,fontSize:10,marginLeft:8,color:T.wn}}>🔗 Chain</span>}
+        {result.tm!==1&&<span style={{...S.mn,fontSize:13,marginLeft:8,color:result.tm>1?T.gd:T.bad}}>Trust ×{result.tm.toFixed(2)}</span>}
+        {result.isChain&&<span style={{...S.mn,fontSize:13,marginLeft:8,color:T.wn}}>🔗 Chain</span>}
       </div>
       <div style={{...S.cd,marginBottom:12,borderColor:isGood?"#BBF7D0":isGood===false?"#FECACA":T.bd,background:isGood?T.gb:isGood===false?T.bb:T.sf}}>
         <p style={{fontSize:14,lineHeight:1.75,margin:0,color:T.t2}}>{result.narrative}</p>
       </div>
       {/* Faction consequences */}
       {factionMsg.length>0&&(<div style={{...S.cd,padding:"8px 12px",marginBottom:10}}>
-        <div style={{...S.lb,fontSize:8,marginBottom:4}}>FACTION EFFECTS THIS ROUND</div>
+        <div style={{...S.lb,fontSize:13,marginBottom:4}}>FACTION EFFECTS THIS ROUND</div>
         {factionMsg.map((m,i)=><div key={i} style={{fontSize:12,color:m.type==="bonus"?T.gd:T.bad,marginBottom:2}}>{m.icon} {m.msg} ({Object.entries(m.fx).map(([k,v])=>`${v>0?"+":""}${v} ${k}`).join(", ")})</div>)}
       </div>)}
       {/* DEMAND RESULT */}
       {demandResult && (
         <div style={{...S.cd,padding:"10px 14px",marginBottom:10,borderColor:demandResult.met?"#BBF7D0":"#FECACA",background:demandResult.met?T.gb:T.bb}}>
-          <div style={{...S.lb,fontSize:8,marginBottom:3,color:demandResult.met?T.gd:T.bad}}>{demandResult.met?"✓ DEMAND MET":"✗ DEMAND IGNORED"}</div>
+          <div style={{...S.lb,fontSize:13,marginBottom:3,color:demandResult.met?T.gd:T.bad}}>{demandResult.met?"✓ DEMAND MET":"✗ DEMAND IGNORED"}</div>
           <div style={{fontSize:12,color:T.t2}}>{demandResult.msg}</div>
-          <div style={{...S.mn,fontSize:10,color:demandResult.color,marginTop:3}}>{Object.entries(demandResult.fx).map(([k,v])=>`${v>0?"+":""}${v} ${METRICS.find(m=>m.id===k)?.label||k}`).join(", ")}</div>
+          <div style={{...S.mn,fontSize:13,color:demandResult.color,marginTop:3}}>{Object.entries(demandResult.fx).map(([k,v])=>`${v>0?"+":""}${v} ${METRICS.find(m=>m.id===k)?.label||k}`).join(", ")}</div>
         </div>
       )}
       {/* MISSION RESULTS */}
       {missionResults.length > 0 && (
         <div style={{...S.cd,padding:"10px 14px",marginBottom:10,borderColor:"#C7D2FE",background:"#EFF4FF"}}>
-          <div style={{...S.lb,fontSize:8,marginBottom:4,color:T.ac}}>🎯 ADVISOR MISSION RESULTS</div>
+          <div style={{...S.lb,fontSize:13,marginBottom:4,color:T.ac}}>🎯 ADVISOR MISSION RESULTS</div>
           {missionResults.map(mr => (
             <div key={mr.advisor.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
               <span style={{fontSize:14}}>{mr.advisor.avatar}</span>
               <span style={{fontSize:12,fontWeight:600,color:mr.advisor.color}}>{mr.advisor.name}</span>
-              <span style={{fontSize:11,color:T.t2}}>{mr.policy} ≥ 2:</span>
-              <span style={{...S.mn,fontSize:11,fontWeight:600,color:mr.met?T.gd:T.bad}}>{mr.met?"✓ Complete":"✗ Failed"}</span>
-              {mr.met && <span style={{...S.mn,fontSize:10,color:T.gd}}>→ Quest {questProgress[mr.advisor.id]||0}/3</span>}
+              <span style={{fontSize:13,color:T.t2}}>{mr.policy} ≥ 2:</span>
+              <span style={{...S.mn,fontSize:13,fontWeight:600,color:mr.met?T.gd:T.bad}}>{mr.met?"✓ Complete":"✗ Failed"}</span>
+              {mr.met && <span style={{...S.mn,fontSize:13,color:T.gd}}>→ Quest {questProgress[mr.advisor.id]||0}/3</span>}
             </div>
           ))}
           {missionResults.filter(r=>r.met).length === 3 && (
-            <div style={{...S.mn,fontSize:11,color:"#7C3AED",marginTop:4,fontWeight:600}}>🌟 All 3 missions complete! Perfect advisory round.</div>
+            <div style={{...S.mn,fontSize:13,color:"#7C3AED",marginTop:4,fontWeight:600}}>🌟 All 3 missions complete! Perfect advisory round.</div>
           )}
         </div>
       )}
@@ -1717,7 +1717,7 @@ export default function Phase4() {
         <div style={{...S.cd,padding:"16px 16px",marginBottom:12,borderColor:"#A78BFA",background:"linear-gradient(135deg, #F5F3FF, #EDE9FE)",border:"2px solid #A78BFA",borderRadius:16}}>
           <div style={{textAlign:"center",marginBottom:10}}>
             <div style={{fontSize:28,marginBottom:4}}>🔓</div>
-            <div style={{...S.lb,fontSize:10,color:"#7C3AED",letterSpacing:"0.3em"}}>TIER-2 UNLOCKED</div>
+            <div style={{...S.lb,fontSize:13,color:"#7C3AED",letterSpacing:"0.3em"}}>TIER-2 UNLOCKED</div>
           </div>
           {newUnlocks.map(u => (
             <div key={u.t2.name} style={{background:"#FFFFFF",borderRadius:12,padding:14,marginBottom:newUnlocks.length>1?8:0,border:`1px solid #DDD6FE`}}>
@@ -1725,14 +1725,14 @@ export default function Phase4() {
                 <span style={{fontSize:20}}>{u.policy.icon}</span>
                 <div>
                   <div style={{fontSize:15,fontWeight:700,color:"#7C3AED"}}>{u.t2.name}</div>
-                  <div style={{...S.mn,fontSize:10,color:T.tm}}>{u.policy.label} · Lifetime investment: {cumulative[u.policy.id]||0}</div>
+                  <div style={{...S.mn,fontSize:13,color:T.tm}}>{u.policy.label} · Lifetime investment: {cumulative[u.policy.id]||0}</div>
                 </div>
               </div>
               <div style={{fontSize:13,color:T.t2,lineHeight:1.6,marginBottom:8}}>{u.t2.info}</div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                <span style={{...S.mn,fontSize:11,fontWeight:600,color:"#7C3AED"}}>Passive bonus every round:</span>
+                <span style={{...S.mn,fontSize:13,fontWeight:600,color:"#7C3AED"}}>Passive bonus every round:</span>
                 {Object.entries(u.t2.passive).map(([k,v]) => (
-                  <span key={k} style={{...S.mn,fontSize:11,background:"#EDE9FE",borderRadius:6,padding:"2px 8px",color:"#6D28D9"}}>+{v} {METRICS.find(m=>m.id===k)?.label||k}</span>
+                  <span key={k} style={{...S.mn,fontSize:13,background:"#EDE9FE",borderRadius:6,padding:"2px 8px",color:"#6D28D9"}}>+{v} {METRICS.find(m=>m.id===k)?.label||k}</span>
                 ))}
               </div>
             </div>
@@ -1740,12 +1740,12 @@ export default function Phase4() {
         </div>
       )}
       {(activeSynergies.length>0||tier2Unlocked.length>0)&&(<div style={{...S.cd,padding:"8px 12px",marginBottom:10,borderColor:"#BBF7D0",background:T.gb}}>
-        {activeSynergies.map(s=><div key={s.label} style={{...S.mn,fontSize:10,color:"#15803D",marginBottom:1}}>⚡ {s.label}: {Object.entries(s.bonus).map(([k,v])=>`+${v} ${k}`).join(", ")}</div>)}
-        {tier2Unlocked.map(t=><div key={t.name} style={{...S.mn,fontSize:10,color:"#15803D",marginBottom:1}}>🔓 {t.name}</div>)}
-        {ADVISORS.filter(a=>questProgress[a.id]>=3).map(a=><div key={a.id} style={{...S.mn,fontSize:10,color:"#15803D"}}>🎯 {a.questLabel}: +2 trust, +1 innovation</div>)}
+        {activeSynergies.map(s=><div key={s.label} style={{...S.mn,fontSize:13,color:"#15803D",marginBottom:1}}>⚡ {s.label}: {Object.entries(s.bonus).map(([k,v])=>`+${v} ${k}`).join(", ")}</div>)}
+        {tier2Unlocked.map(t=><div key={t.name} style={{...S.mn,fontSize:13,color:"#15803D",marginBottom:1}}>🔓 {t.name}</div>)}
+        {ADVISORS.filter(a=>questProgress[a.id]>=3).map(a=><div key={a.id} style={{...S.mn,fontSize:13,color:"#15803D"}}>🎯 {a.questLabel}: +2 trust, +1 innovation</div>)}
       </div>)}
       <div style={{...S.cd,marginBottom:12}}>
-        <div style={{...S.lb,fontSize:8,marginBottom:8}}>METRICS</div>
+        <div style={{...S.lb,fontSize:13,marginBottom:8}}>METRICS</div>
         {METRICS.map(m=><MetricBar key={m.id} metric={m} value={metrics[m.id]} prev={prevMetrics[m.id]} history={metricHistory.map(h=>h[m.id])}/>)}
       </div>
       {bonusPoints>0&&(<div style={{...S.cd,padding:"8px 12px",marginBottom:12,borderColor:"#C7D2FE",background:"#EFF4FF",textAlign:"center"}}>
@@ -1780,51 +1780,51 @@ export default function Phase4() {
         <h2 style={{...S.hl,fontSize:24,marginBottom:4}}>{collapsed?`Survived ${round-ROUNDS} Rounds`:grade.title}</h2>
         <p style={{fontSize:13,color:T.t2,marginBottom:12}}>{collapsed?"Systems could not sustain the pressure.":grade.sub}</p>
         <div style={{display:"grid",gridTemplateColumns:endlessMode?"repeat(5,1fr)":"repeat(4,1fr)",gap:6}}>
-          <div><div style={{...S.mn,fontSize:18,fontWeight:700,color:gc}}>{avg}</div><div style={{fontSize:8,color:T.tm}}>AVG</div></div>
-          {endlessMode&&<div><div style={{...S.mn,fontSize:18,fontWeight:700,color:T.bad}}>{round-ROUNDS}</div><div style={{fontSize:8,color:T.tm}}>SURVIVED</div></div>}
-          <div><div style={{...S.mn,fontSize:18,fontWeight:700,color:T.wn}}>{chainCount}</div><div style={{fontSize:8,color:T.tm}}>CHAINS</div></div>
-          <div><div style={{...S.mn,fontSize:18,fontWeight:700,color:T.gd}}>{questsDone.length}/3</div><div style={{fontSize:8,color:T.tm}}>QUESTS</div></div>
-          <div><div style={{...S.mn,fontSize:18,fontWeight:700,color:T.ac}}>{tier2Unlocked.length}</div><div style={{fontSize:8,color:T.tm}}>UNLOCKS</div></div>
+          <div><div style={{...S.mn,fontSize:18,fontWeight:700,color:gc}}>{avg}</div><div style={{fontSize:13,color:T.tm}}>AVG</div></div>
+          {endlessMode&&<div><div style={{...S.mn,fontSize:18,fontWeight:700,color:T.bad}}>{round-ROUNDS}</div><div style={{fontSize:13,color:T.tm}}>SURVIVED</div></div>}
+          <div><div style={{...S.mn,fontSize:18,fontWeight:700,color:T.wn}}>{chainCount}</div><div style={{fontSize:13,color:T.tm}}>CHAINS</div></div>
+          <div><div style={{...S.mn,fontSize:18,fontWeight:700,color:T.gd}}>{questsDone.length}/3</div><div style={{fontSize:13,color:T.tm}}>QUESTS</div></div>
+          <div><div style={{...S.mn,fontSize:18,fontWeight:700,color:T.ac}}>{tier2Unlocked.length}</div><div style={{fontSize:13,color:T.tm}}>UNLOCKS</div></div>
         </div>
         <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:4,marginTop:10}}>
-          {sorted.slice(0,5).map(p=><span key={p.id} style={{...S.mn,fontSize:9,color:p.color}}>{p.icon}{cumulative[p.id]||0}</span>)}
+          {sorted.slice(0,5).map(p=><span key={p.id} style={{...S.mn,fontSize:12,color:p.color}}>{p.icon}{cumulative[p.id]||0}</span>)}
         </div>
       </div>
 
       {/* Narrative */}
       <div style={{...S.cd,marginBottom:14,textAlign:"left"}}>
-        <div style={{...S.lb,fontSize:8,marginBottom:6}}>YOUR STORY</div>
+        <div style={{...S.lb,fontSize:13,marginBottom:6}}>YOUR STORY</div>
         <p style={{fontSize:13,color:T.t2,lineHeight:1.75,margin:0}}>{narrative}</p>
       </div>
 
       {/* Final metrics with sparklines */}
       <div style={{...S.cd,marginBottom:14,textAlign:"left"}}>
-        <div style={{...S.lb,fontSize:8,marginBottom:8}}>FINAL METRICS</div>
+        <div style={{...S.lb,fontSize:13,marginBottom:8}}>FINAL METRICS</div>
         {METRICS.map(m=><MetricBar key={m.id} metric={m} value={metrics[m.id]} prev={metrics[m.id]} history={metricHistory.map(h=>h[m.id])}/>)}
       </div>
 
       <div style={{...S.cd,marginBottom:14,textAlign:"left"}}>
-        <div style={{...S.lb,fontSize:8,marginBottom:6}}>LIFETIME INVESTMENT</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{sorted.map(p=>{const t2=(cumulative[p.id]||0)>=p.t2.thresh;return(<span key={p.id} style={{...S.mn,fontSize:10,background:p.color+"10",border:`1px solid ${p.color}33`,borderRadius:6,padding:"2px 8px",color:p.color}}>{t2?"🔓 ":""}{p.icon} {p.label}: {cumulative[p.id]||0}</span>);})}</div>
+        <div style={{...S.lb,fontSize:13,marginBottom:6}}>LIFETIME INVESTMENT</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{sorted.map(p=>{const t2=(cumulative[p.id]||0)>=p.t2.thresh;return(<span key={p.id} style={{...S.mn,fontSize:13,background:p.color+"10",border:`1px solid ${p.color}33`,borderRadius:6,padding:"2px 8px",color:p.color}}>{t2?"🔓 ":""}{p.icon} {p.label}: {cumulative[p.id]||0}</span>);})}</div>
       </div>
 
       <div style={{...S.cd,marginBottom:14,textAlign:"left"}}>
-        <div style={{...S.lb,fontSize:8,marginBottom:6}}>FACTIONS</div>
-        <div style={grd(80)}>{FACTIONS.map(f=>{const s=factionSat[f.id]||50;return(<div key={f.id} style={{textAlign:"center"}}><div style={{fontSize:18}}>{f.icon}</div><div style={{fontSize:10,fontWeight:700,color:f.color}}>{f.name}</div><div style={{...S.mn,fontSize:12,color:s>=60?T.gd:s>=40?T.wn:T.bad,fontWeight:600}}>{Math.round(s)}</div></div>);})}</div>
+        <div style={{...S.lb,fontSize:13,marginBottom:6}}>FACTIONS</div>
+        <div style={grd(80)}>{FACTIONS.map(f=>{const s=factionSat[f.id]||50;return(<div key={f.id} style={{textAlign:"center"}}><div style={{fontSize:18}}>{f.icon}</div><div style={{fontSize:13,fontWeight:700,color:f.color}}>{f.name}</div><div style={{...S.mn,fontSize:12,color:s>=60?T.gd:s>=40?T.wn:T.bad,fontWeight:600}}>{Math.round(s)}</div></div>);})}</div>
       </div>
 
       <div style={{...S.cd,marginBottom:16,textAlign:"left",maxHeight:280,overflowY:"auto"}}>
-        <div style={{...S.lb,fontSize:8,marginBottom:8}}>TIMELINE</div>
+        <div style={{...S.lb,fontSize:13,marginBottom:8}}>TIMELINE</div>
         {history.map((h,i)=>(<div key={i} style={{marginBottom:12,paddingBottom:12,borderBottom:i<history.length-1?`1px solid ${T.bd}`:"none"}}>
           <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:4}}>
-            <span style={{...S.mn,fontSize:11,fontWeight:600,color:catCol[h.category]||T.ac}}>{h.year} — {h.eventTitle}</span>
-            <span style={{...S.mn,fontSize:9,color:T.tm}}>{h.choiceLabel}</span>
+            <span style={{...S.mn,fontSize:13,fontWeight:600,color:catCol[h.category]||T.ac}}>{h.year} — {h.eventTitle}</span>
+            <span style={{...S.mn,fontSize:12,color:T.tm}}>{h.choiceLabel}</span>
           </div>
-          {h.isChain&&<div style={{...S.mn,fontSize:9,color:T.wn,marginTop:1}}>🔗 Chain event</div>}
-          {h.microText&&<div style={{fontSize:11,color:T.wn,marginTop:1}}>⚡ {h.microLabel ? `${h.microLabel}: ` : ""}{h.microText}</div>}
+          {h.isChain&&<div style={{...S.mn,fontSize:12,color:T.wn,marginTop:1}}>🔗 Chain event</div>}
+          {h.microText&&<div style={{fontSize:13,color:T.wn,marginTop:1}}>⚡ {h.microLabel ? `${h.microLabel}: ` : ""}{h.microText}</div>}
           <div style={{fontSize:12,color:T.t2,lineHeight:1.5,marginTop:2}}>{h.narrative}</div>
-          {h.factionMsgs?.length>0&&h.factionMsgs.map((m,j)=><div key={j} style={{...S.mn,fontSize:9,color:m.type==="bonus"?T.gd:T.bad,marginTop:1}}>{m.icon} {m.msg}</div>)}
-          {h.synergies?.length>0&&<div style={{...S.mn,fontSize:9,color:T.gd,marginTop:1}}>⚡ {h.synergies.join(", ")}</div>}
+          {h.factionMsgs?.length>0&&h.factionMsgs.map((m,j)=><div key={j} style={{...S.mn,fontSize:12,color:m.type==="bonus"?T.gd:T.bad,marginTop:1}}>{m.icon} {m.msg}</div>)}
+          {h.synergies?.length>0&&<div style={{...S.mn,fontSize:12,color:T.gd,marginTop:1}}>⚡ {h.synergies.join(", ")}</div>}
         </div>))}
       </div>
 
@@ -1837,11 +1837,11 @@ export default function Phase4() {
         <Btn onClick={restart} color={gc}>Play Again →</Btn>
       </div>
       {!endlessMode && !collapsed && (
-        <div style={{...S.mn,fontSize:10,color:T.tm,marginTop:8,maxWidth:400,marginLeft:"auto",marginRight:"auto"}}>
+        <div style={{...S.mn,fontSize:13,color:T.tm,marginTop:8,maxWidth:400,marginLeft:"auto",marginRight:"auto"}}>
           Endless mode continues past the Threshold with escalating difficulty. Points decrease, feedback intensifies. Game ends when any metric hits 0 or average drops below 20. How long can you sustain the Intelligence Age?
         </div>
       )}
-      <div style={{...S.mn,marginTop:14,fontSize:10,color:T.tf}}>Based on OpenAI · Anthropic RSP · WEF · White House AI Action Plan</div>
+      <div style={{...S.mn,marginTop:14,fontSize:13,color:T.tf}}>Based on OpenAI · Anthropic RSP · WEF · White House AI Action Plan</div>
     </div></div>);
   }
   return null;
