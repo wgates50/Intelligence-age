@@ -688,6 +688,7 @@ const S={
   mn:{fontFamily:"'JetBrains Mono',monospace"},
   lb:{fontSize:13,letterSpacing:"0.22em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace",color:T.tm},
   bt:{border:"none",borderRadius:10,padding:"15px 32px",fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"'Outfit',sans-serif",transition:"all 0.15s"},
+  sh:{fontSize:14,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace",color:T.tx,paddingBottom:8,marginBottom:12,borderBottom:`2px solid ${T.bd}`},
 };
 const catCol={LABOUR:"#C05621",INFRASTRUCTURE:"#CA8A04",SAFETY:"#DC2626",ECONOMY:"#16A34A",GOVERNANCE:"#0891B2",GEOPOLITICS:"#4F46E5",SCIENCE:"#C026D3",SUPERINTELLIGENCE:"#DC2626"};
 const grd = (min) => ({display:"grid",gridTemplateColumns:`repeat(auto-fill,minmax(${min}px,1fr))`,gap:12});
@@ -1341,197 +1342,224 @@ export default function Phase4() {
   // ── ALLOCATE ──
   if (phase === "allocate") return (
     <div style={S.pg}><style>{fonts}{phaseCSS}</style><div ref={topRef}/><div className="phase-enter" style={S.in}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-        <div><div style={{...S.lb,marginBottom:3}}>{cty?.flag||""} YEAR {year} — {endlessMode?`ENDLESS ROUND ${round-ROUNDS+1}`:` ROUND ${round+1}/${ROUNDS}`} · {diff.label.toUpperCase()}{weeklyMode?" · WEEKLY":""}</div><h2 style={{...S.hl,fontSize:32,margin:0}}>Allocate Resources</h2>{endlessMode&&<div style={{fontSize:13,color:T.bad,marginTop:2}}>⚠ Endless mode — collapse when any metric hits 0 or avg drops below 20</div>}{cty&&<div style={{fontSize:13,color:T.tm,marginTop:1}}>{cty.flavour}</div>}</div>
-        <div style={{textAlign:"center",background:pointsLeft===0?T.gb:T.sf,border:`1px solid ${pointsLeft===0?"#BBF7D0":T.bd}`,borderRadius:12,padding:"6px 16px"}}>
-          <div style={{...S.mn,fontSize:26,fontWeight:700,color:pointsLeft===0?T.gd:T.tx}}>{pointsLeft}</div>
-          <div style={{...S.lb,fontSize:8}}>{bonusPoints>0?`${basePts}+${bonusPoints}`:"PTS LEFT"}</div>
+      {/* HEADER */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+        <div>
+          <div style={{...S.lb,marginBottom:4}}>{cty?.flag||""} YEAR {year} — {endlessMode?`ENDLESS ROUND ${round-ROUNDS+1}`:` ROUND ${round+1}/${ROUNDS}`} · {diff.label.toUpperCase()}{weeklyMode?" · WEEKLY":""}</div>
+          <h2 style={{...S.hl,fontSize:32,margin:0}}>Allocate Resources</h2>
+          {endlessMode&&<div style={{fontSize:13,color:T.bad,marginTop:2}}>⚠ Endless mode — collapse when any metric hits 0 or avg drops below 20</div>}
+          {cty&&<div style={{fontSize:13,color:T.tm,marginTop:2}}>{cty.flavour}</div>}
+        </div>
+        <div style={{textAlign:"center",background:pointsLeft===0?T.gb:T.sf,border:`2px solid ${pointsLeft===0?"#BBF7D0":T.bd}`,borderRadius:14,padding:"10px 20px",minWidth:80}}>
+          <div style={{...S.mn,fontSize:32,fontWeight:700,color:pointsLeft===0?T.gd:T.tx}}>{pointsLeft}</div>
+          <div style={{...S.lb,fontSize:11}}>{bonusPoints>0?`${basePts}+${bonusPoints}`:"PTS LEFT"}</div>
         </div>
       </div>
       <Timeline round={round}/>
-      {lastRound && (<div style={{...S.cd,padding:"10px 14px",marginBottom:10,borderColor:lastRound.isGood?"#BBF7D0":lastRound.isGood===false?"#FECACA":T.bd,background:lastRound.isGood?T.gb:lastRound.isGood===false?T.bb:T.sa}}>
-        <div style={{...S.lb,fontSize:13,marginBottom:3}}>LAST YEAR: {lastRound.eventTitle}</div>
-        <div style={{fontSize:12,color:T.t2,lineHeight:1.5}}>{lastRound.narrative}</div>
-      </div>)}
-      {/* Faction consequences from last round */}
-      {factionMsg.length > 0 && (<div style={{...S.cd,padding:"10px 14px",marginBottom:10,borderColor:factionMsg[0].type==="bonus"?"#BBF7D0":"#FECACA",background:factionMsg[0].type==="bonus"?T.gb:T.bb}}>
-        <div style={{...S.lb,fontSize:13,marginBottom:4}}>{factionMsg[0].type==="bonus"?"✓":"⚠"} FACTION CONSEQUENCES</div>
-        {factionMsg.map((m,i) => <div key={i} style={{fontSize:12,color:T.t2,marginBottom:2}}>{m.icon} <strong style={{color:m.color}}>{m.faction}:</strong> {m.msg}</div>)}
-      </div>)}
-      {upcomingChains.length>0&&(<div style={{...S.cd,padding:"8px 12px",marginBottom:10,borderColor:"#FDE68A",background:T.wb}}>
-        <div style={{...S.lb,fontSize:13,color:T.wn}}>⏳ {upcomingChains.length} consequence{upcomingChains.length>1?"s":""} approaching</div>
-      </div>)}
-      {/* FACTION DEMAND */}
-      {factionDemand && (
-        <div style={{...S.cd,padding:"12px 14px",marginBottom:10,borderColor:factionDemand.faction.color+"55",background:factionDemand.faction.color+"08"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-            <div style={{...S.lb,fontSize:12,color:factionDemand.faction.color}}>{factionDemand.faction.icon} FACTION DEMAND</div>
-            <span style={{...S.mn,fontSize:13,color:T.tm}}>{factionDemand.faction.name}</span>
+
+      {/* ALERTS ROW — side by side */}
+      <div style={{display:"flex",flexWrap:"wrap",gap:10,marginBottom:14}}>
+        {lastRound && (<div style={{...S.cd,padding:"10px 14px",flex:"1 1 200px",borderColor:lastRound.isGood?"#BBF7D0":lastRound.isGood===false?"#FECACA":T.bd,background:lastRound.isGood?T.gb:lastRound.isGood===false?T.bb:T.sa}}>
+          <div style={{...S.lb,fontSize:12,marginBottom:3}}>📋 LAST YEAR: {lastRound.eventTitle}</div>
+          <div style={{fontSize:13,color:T.t2,lineHeight:1.5}}>{lastRound.narrative}</div>
+        </div>)}
+        {factionMsg.length > 0 && (<div style={{...S.cd,padding:"10px 14px",flex:"1 1 200px",borderColor:factionMsg[0].type==="bonus"?"#BBF7D0":"#FECACA",background:factionMsg[0].type==="bonus"?T.gb:T.bb}}>
+          <div style={{...S.lb,fontSize:12,marginBottom:4}}>{factionMsg[0].type==="bonus"?"✓":"⚠"} FACTION CONSEQUENCES</div>
+          {factionMsg.map((m,i) => <div key={i} style={{fontSize:13,color:T.t2,marginBottom:2}}>{m.icon} <strong style={{color:m.color}}>{m.faction}:</strong> {m.msg}</div>)}
+        </div>)}
+        {upcomingChains.length>0&&(<div style={{...S.cd,padding:"10px 14px",flex:"1 1 200px",borderColor:"#FDE68A",background:T.wb}}>
+          <div style={{...S.lb,fontSize:12,color:T.wn}}>⏳ {upcomingChains.length} consequence{upcomingChains.length>1?"s":""} approaching</div>
+        </div>)}
+      </div>
+
+      {/* TWO-COLUMN LAYOUT */}
+      <div style={{display:"flex",gap:20,alignItems:"flex-start"}}>
+
+        {/* LEFT COLUMN — Budget & Policies */}
+        <div style={{flex:"1 1 58%",minWidth:0}}>
+          {/* Faction Demand — important, goes at top */}
+          {factionDemand && (
+            <div style={{...S.cd,padding:"14px 16px",marginBottom:14,borderColor:factionDemand.faction.color+"55",background:factionDemand.faction.color+"08"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                <div style={{...S.lb,fontSize:12,color:factionDemand.faction.color}}>{factionDemand.faction.icon} FACTION DEMAND</div>
+                <span style={{...S.mn,fontSize:13,color:T.tm}}>{factionDemand.faction.name}</span>
+              </div>
+              <div style={{fontSize:14,color:T.tx,fontWeight:600,marginBottom:4}}>
+                Invest {factionDemand.amount}+ in {POLICIES.find(p=>p.id===factionDemand.policy)?.icon} {POLICIES.find(p=>p.id===factionDemand.policy)?.label} this round
+              </div>
+              <div style={{display:"flex",gap:12,fontSize:13}}>
+                <span style={{color:T.gd}}>✓ {factionDemand.rewardMsg.split(".")[0]}</span>
+                <span style={{color:T.bad}}>✗ {factionDemand.penaltyMsg.split(".")[0]}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Advisor Missions */}
+          {advisorMissions.length > 0 && (
+            <div style={{...S.cd,padding:"12px 16px",marginBottom:14,borderColor:"#C7D2FE",background:"#EFF4FF"}}>
+              <div style={{...S.lb,fontSize:12,color:T.ac,marginBottom:8}}>🎯 ADVISOR MISSIONS THIS ROUND</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
+                {advisorMissions.map(m => {
+                  const met = (alloc[m.policy]||0) >= m.amount;
+                  return (
+                    <div key={m.advisor.id} style={{flex:"1 1 180px",background:met?T.gb:T.sf,border:`1px solid ${met?"#BBF7D0":T.bd}`,borderRadius:10,padding:"10px 12px"}}>
+                      <div style={{fontSize:13,fontWeight:600,color:m.advisor.color}}>{m.advisor.avatar} {m.advisor.name}</div>
+                      <div style={{fontSize:13,color:T.tx,marginTop:2}}>{POLICIES.find(p=>p.id===m.policy)?.icon} {m.policyLabel} ≥ {m.amount}</div>
+                      <div style={{fontSize:12,color:T.tm,marginTop:1,fontStyle:"italic"}}>{m.reason}</div>
+                      <div style={{...S.mn,fontSize:13,marginTop:3,color:met?T.gd:T.tm}}>{met?"✓ Met":"○ Not met"}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* POLICIES SECTION */}
+          <div style={S.sh}>💰 Allocate Your Budget</div>
+          <div style={grd(220)}>
+            {POLICIES.map(p => {
+              const v=alloc[p.id]||0,cv=cumulative[p.id]||0,t2Done=cv>=p.t2.thresh;
+              const policySynergies = activeSynergies.filter(s => s.ids.includes(p.id));
+              const inSynergy = policySynergies.length > 0;
+              return (<div key={p.id} style={{...S.cd,padding:14,borderColor:inSynergy?"#BBF7D0":v>0?p.color+"44":T.bd,background:v>0?p.color+"06":T.sf,marginBottom:0,borderLeft:inSynergy?`3px solid ${T.gd}`:""}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                  <Tip text={p.t2.info}><span style={{fontSize:14,fontWeight:600,cursor:"help"}}>{p.icon} {p.label}</span></Tip>
+                  <span style={{...S.mn,fontSize:18,fontWeight:700,color:v>0?p.color:T.tf}}>{v}</span>
+                </div>
+                <div style={{fontSize:13,color:T.tm,marginBottom:6,lineHeight:1.4}}>{p.desc}</div>
+                <div style={{display:"flex",gap:6,marginBottom:6}}>
+                  <button onClick={()=>adjust(p.id,-1)} style={{...S.bt,flex:1,padding:"6px 0",background:T.sa,color:T.t2,fontSize:16,border:`1px solid ${T.bd}`}}>−</button>
+                  <button onClick={()=>adjust(p.id,1)} style={{...S.bt,flex:1,padding:"6px 0",background:p.color+"10",color:p.color,fontSize:16,border:`1px solid ${p.color}33`}}>+</button>
+                </div>
+                <div style={{display:"flex",gap:4,justifyContent:"center",marginBottom:3}}>{[0,1,2,3,4,5].map(i=><div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<v?p.color:T.bd}}/>)}</div>
+                <div style={{...S.mn,fontSize:12,color:t2Done?T.gd:T.tf,textAlign:"center"}}>{t2Done?`🔓 ${p.t2.name}`:`${cv}/${p.t2.thresh} → ${p.t2.name}`}</div>
+                {inSynergy && <div style={{...S.mn,fontSize:12,color:T.gd,textAlign:"center",marginTop:2}}>⚡ {policySynergies.map(s=>s.label).join(", ")}</div>}
+              </div>);
+            })}
           </div>
-          <div style={{fontSize:13,color:T.tx,fontWeight:600,marginBottom:4}}>
-            Invest {factionDemand.amount}+ in {POLICIES.find(p=>p.id===factionDemand.policy)?.icon} {POLICIES.find(p=>p.id===factionDemand.policy)?.label} this round
-          </div>
-          <div style={{display:"flex",gap:12,fontSize:13}}>
-            <span style={{color:T.gd}}>✓ {factionDemand.rewardMsg.split(".")[0]}</span>
-            <span style={{color:T.bad}}>✗ {factionDemand.penaltyMsg.split(".")[0]}</span>
+          {activeSynergies.length>0&&(<div style={{...S.cd,padding:"10px 14px",marginTop:12,borderColor:"#BBF7D0",background:T.gb}}>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{activeSynergies.map(s=><span key={s.label} style={{...S.mn,fontSize:12,background:"#DCFCE7",border:"1px solid #BBF7D0",borderRadius:6,padding:"3px 8px",color:"#15803D"}}>⚡ {s.label}</span>)}</div>
+          </div>)}
+          <div style={{textAlign:"center",marginTop:16}}>
+            <Btn onClick={submitAllocation} disabled={pointsLeft>0}>Commit & Face {year} →</Btn>
+            {pointsLeft>0&&<div style={{...S.mn,fontSize:13,color:T.tf,marginTop:6}}>Allocate all {pointsLeft} points</div>}
+            {pointsLeft<totalPoints&&<button onClick={resetAlloc} style={{...S.bt,background:"transparent",color:T.tm,fontSize:13,marginTop:8,padding:"8px 18px",border:`1px solid ${T.bd}`}}>↺ Reset</button>}
           </div>
         </div>
-      )}
-      {/* ADVISOR MISSIONS */}
-      {advisorMissions.length > 0 && (
-        <div style={{...S.cd,padding:"10px 14px",marginBottom:10,borderColor:"#C7D2FE",background:"#EFF4FF"}}>
-          <div style={{...S.lb,fontSize:12,color:T.ac,marginBottom:6}}>🎯 ADVISOR MISSIONS THIS ROUND</div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-            {advisorMissions.map(m => {
-              const met = (alloc[m.policy]||0) >= m.amount;
+
+        {/* RIGHT COLUMN — Nation Dashboard (sticky sidebar) */}
+        <div style={{flex:"0 0 38%",position:"sticky",top:16,maxHeight:"calc(100vh - 32px)",overflowY:"auto",display:"flex",flexDirection:"column",gap:12}}>
+
+          {/* NATIONAL METRICS */}
+          <div style={{...S.cd,padding:"16px 18px"}}>
+            <div style={S.sh}>📊 National Metrics</div>
+            {METRICS.map(m => {
+              const v = metrics[m.id], hist = metricHistory.map(h => h[m.id]);
+              const prev = metricHistory.length > 1 ? metricHistory[metricHistory.length-2][m.id] : v;
+              const d = v - prev;
+              const col = v >= 60 ? T.gd : v >= 40 ? T.wn : T.bad;
+              const chartW = 80, chartH = 28;
+              const mn = Math.min(...hist), mx = Math.max(...hist), rng = mx - mn || 1;
+              const pts = hist.map((val,i) => `${(i/(Math.max(hist.length-1,1)))*chartW},${chartH - ((val-mn)/rng)*chartH}`).join(" ");
+              const fillPts = pts + ` ${chartW},${chartH} 0,${chartH}`;
               return (
-                <div key={m.advisor.id} style={{flex:"1 1 140px",background:met?T.gb:T.sf,border:`1px solid ${met?"#BBF7D0":T.bd}`,borderRadius:10,padding:"8px 10px"}}>
-                  <div style={{fontSize:12,fontWeight:600,color:m.advisor.color}}>{m.advisor.avatar} {m.advisor.name}</div>
-                  <div style={{fontSize:13,color:T.tx,marginTop:2}}>{POLICIES.find(p=>p.id===m.policy)?.icon} {m.policyLabel} ≥ {m.amount}</div>
-                  <div style={{fontSize:13,color:T.tm,marginTop:1,fontStyle:"italic"}}>{m.reason}</div>
-                  <div style={{...S.mn,fontSize:13,marginTop:3,color:met?T.gd:T.tm}}>{met?"✓ Met":"○ Not met"}</div>
+                <div key={m.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,paddingBottom:10,borderBottom:`1px solid ${T.bd}`}}>
+                  <Tip text={{"growth":"Overall economic output and AI productivity gains.","equality":"How evenly prosperity is distributed.","trust":"Public confidence in institutions and AI governance.","safety_score":"Containment capacity for frontier AI risks.","innovation":"R&D output, new businesses, breakthroughs. Decays without investment.","wellbeing":"Worker quality of life — security, benefits, balance.","geopolitics":"International influence and coordination capacity."}[m.id]}>
+                    <div style={{width:100,flexShrink:0}}>
+                      <div style={{fontSize:14,fontWeight:600,color:T.tx,cursor:"help",borderBottom:`1px dotted ${T.bd}`}}>{m.icon} {m.label}</div>
+                    </div>
+                  </Tip>
+                  <div style={{flex:1}}>
+                    <div style={{height:10,background:T.sa,borderRadius:4,overflow:"hidden",border:`1px solid ${T.bd}`}}>
+                      <div style={{height:"100%",width:`${v}%`,background:col,borderRadius:2,transition:"width 0.6s ease"}}/>
+                    </div>
+                  </div>
+                  {hist.length >= 2 && (
+                    <svg width={chartW} height={chartH} style={{flexShrink:0}}>
+                      <polygon points={fillPts} fill={col} opacity="0.1"/>
+                      <polyline points={pts} fill="none" stroke={col} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <circle cx={chartW} cy={chartH - ((hist[hist.length-1]-mn)/rng)*chartH} r="2.5" fill={col}/>
+                    </svg>
+                  )}
+                  <div style={{width:52,textAlign:"right",flexShrink:0}}>
+                    <div style={{...S.mn,fontSize:16,fontWeight:700,color:col}}>{v}</div>
+                    {d !== 0 && <div style={{...S.mn,fontSize:12,color:d>0?T.gd:T.bad}}>{d>0?"+":""}{d}</div>}
+                  </div>
                 </div>
               );
             })}
+            {tier2Unlocked.length>0&&(<div style={{marginTop:6,padding:"8px 10px",borderRadius:8,background:T.gb,border:"1px solid #BBF7D0"}}>
+              <div style={{...S.lb,fontSize:11,color:T.gd,marginBottom:3}}>🔓 TIER-2 ACTIVE</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:4}}>{tier2Unlocked.map(t=><span key={t.name} style={{...S.mn,fontSize:12,background:"#DCFCE7",border:"1px solid #BBF7D0",borderRadius:6,padding:"2px 6px",color:"#15803D"}}>{t.name}<InfoButton term={t.name}/></span>)}</div>
+            </div>)}
           </div>
-        </div>
-      )}
-      {/* ── NATIONAL METRICS — redesigned ── */}
-      <div style={{...S.cd,padding:"14px 16px",marginBottom:10}}>
-        <div style={{...S.lb,fontSize:12,marginBottom:8}}>NATIONAL METRICS</div>
-        {METRICS.map(m => {
-          const v = metrics[m.id], hist = metricHistory.map(h => h[m.id]);
-          const prev = metricHistory.length > 1 ? metricHistory[metricHistory.length-2][m.id] : v;
-          const d = v - prev;
-          const col = v >= 60 ? T.gd : v >= 40 ? T.wn : T.bad;
-          // Larger trend chart
-          const chartW = 80, chartH = 28;
-          const mn = Math.min(...hist), mx = Math.max(...hist), rng = mx - mn || 1;
-          const pts = hist.map((val,i) => `${(i/(Math.max(hist.length-1,1)))*chartW},${chartH - ((val-mn)/rng)*chartH}`).join(" ");
-          const fillPts = pts + ` ${chartW},${chartH} 0,${chartH}`;
-          return (
-            <div key={m.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,paddingBottom:8,borderBottom:`1px solid ${T.bd}`}}>
-              <Tip text={{"growth":"Overall economic output and AI productivity gains.","equality":"How evenly prosperity is distributed.","trust":"Public confidence in institutions and AI governance.","safety_score":"Containment capacity for frontier AI risks.","innovation":"R&D output, new businesses, breakthroughs. Decays without investment.","wellbeing":"Worker quality of life — security, benefits, balance.","geopolitics":"International influence and coordination capacity."}[m.id]}>
-                <div style={{width:110,flexShrink:0}}>
-                  <div style={{fontSize:15,fontWeight:600,color:T.tx,cursor:"help",borderBottom:`1px dotted ${T.bd}`}}>{m.icon} {m.label}</div>
-                </div>
-              </Tip>
-              <div style={{flex:1}}>
-                <div style={{height:10,background:T.sa,borderRadius:4,overflow:"hidden",border:`1px solid ${T.bd}`}}>
-                  <div style={{height:"100%",width:`${v}%`,background:col,borderRadius:2,transition:"width 0.6s ease"}}/>
-                </div>
-              </div>
-              {hist.length >= 2 && (
-                <svg width={chartW} height={chartH} style={{flexShrink:0}}>
-                  <polygon points={fillPts} fill={col} opacity="0.1"/>
-                  <polyline points={pts} fill="none" stroke={col} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <circle cx={chartW} cy={chartH - ((hist[hist.length-1]-mn)/rng)*chartH} r="2.5" fill={col}/>
-                </svg>
-              )}
-              <div style={{width:52,textAlign:"right",flexShrink:0}}>
-                <div style={{...S.mn,fontSize:16,fontWeight:700,color:col}}>{v}</div>
-                {d !== 0 && <div style={{...S.mn,fontSize:13,color:d>0?T.gd:T.bad}}>{d>0?"+":""}{d}</div>}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {tier2Unlocked.length>0&&(<div style={{...S.cd,padding:"8px 12px",marginBottom:10,borderColor:"#BBF7D0",background:T.gb}}>
-        <div style={{...S.lb,fontSize:13,color:T.gd,marginBottom:3}}>🔓 TIER-2 ACTIVE</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:4}}>{tier2Unlocked.map(t=><span key={t.name} style={{...S.mn,fontSize:12,background:"#DCFCE7",border:"1px solid #BBF7D0",borderRadius:6,padding:"2px 6px",color:"#15803D"}}>{t.name}<InfoButton term={t.name}/></span>)}</div>
-      </div>)}
-      {/* ── FACTIONS — always visible ── */}
-      <div style={{...S.cd,padding:"10px 14px",marginBottom:10}}>
-        <div style={{...S.lb,fontSize:12,marginBottom:6}}>FACTIONS</div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {factions.map(f => {
-            const s = factionSat[f.id]||50;
-            const label = s<30?"Hostile":s>=60?"Supportive":s>=40?"Neutral":"Opposed";
-            const sc = s>=60?T.gd:s>=40?T.wn:T.bad;
-            return (
-              <div key={f.id} style={{flex:"1 1 80px",background:T.sf,border:`1px solid ${sc}33`,borderRadius:10,padding:"8px 10px",textAlign:"center"}}>
-                <div style={{fontSize:22}}>{f.icon}</div>
-                <div style={{fontSize:14,fontWeight:700,color:f.color,marginBottom:2}}>{f.name}</div>
-                <div style={{height:6,background:T.sa,borderRadius:3,overflow:"hidden",marginBottom:2}}>
-                  <div style={{height:"100%",width:`${s}%`,background:sc,borderRadius:2,transition:"width 0.5s"}}/>
-                </div>
-                <div style={{...S.mn,fontSize:13,fontWeight:600,color:sc}}>{Math.round(s)} <span style={{fontSize:13,fontWeight:400}}>{label}</span></div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      {/* ── ADVISORS + MISSIONS — always visible ── */}
-      <div style={{...S.cd,padding:"10px 14px",marginBottom:10}}>
-        <div style={{...S.lb,fontSize:12,marginBottom:6}}>ADVISORS & MISSIONS</div>
-        <div style={grd(200)}>
-          {ADVISORS.map(a => {
-            const qp = questProgress[a.id]||0;
-            const mission = advisorMissions.find(m => m.advisor.id === a.id);
-            const missionMet = mission ? (alloc[mission.policy]||0) >= mission.amount : false;
-            return (
-              <div key={a.id} style={{background:T.sf,border:`1px solid ${a.color}22`,borderRadius:10,padding:10}}>
-                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-                  <span style={{fontSize:16}}>{a.avatar}</span>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:700,color:a.color}}>{a.name}</div>
-                    <div style={{...S.lb,fontSize:11}}>{a.philosophy}</div>
-                  </div>
-                </div>
-                <div style={{fontSize:13,color:T.t2,lineHeight:1.4,marginBottom:5}}>{a.getAdvice(round,metrics,cumulative)}</div>
-                {mission && (
-                  <div style={{background:missionMet?T.gb:T.sa,border:`1px solid ${missionMet?"#BBF7D0":T.bd}`,borderRadius:6,padding:"5px 7px",marginBottom:4}}>
-                    <div style={{fontSize:13,fontWeight:600,color:missionMet?T.gd:T.tx}}>
-                      {missionMet?"✓":"○"} {POLICIES.find(p=>p.id===mission.policy)?.icon} {mission.policyLabel} ≥ {mission.amount}
+
+          {/* FACTIONS */}
+          <div style={{...S.cd,padding:"14px 16px"}}>
+            <div style={S.sh}>⚔ Factions</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              {factions.map(f => {
+                const s = factionSat[f.id]||50;
+                const label = s<30?"Hostile":s>=60?"Supportive":s>=40?"Neutral":"Opposed";
+                const sc = s>=60?T.gd:s>=40?T.wn:T.bad;
+                return (
+                  <div key={f.id} style={{flex:"1 1 70px",background:T.sf,border:`1px solid ${sc}33`,borderRadius:10,padding:"8px 6px",textAlign:"center"}}>
+                    <div style={{fontSize:20}}>{f.icon}</div>
+                    <div style={{fontSize:12,fontWeight:700,color:f.color,marginBottom:2}}>{f.name}</div>
+                    <div style={{height:5,background:T.sa,borderRadius:3,overflow:"hidden",marginBottom:2}}>
+                      <div style={{height:"100%",width:`${s}%`,background:sc,borderRadius:2,transition:"width 0.5s"}}/>
                     </div>
-                    <div style={{fontSize:12,color:T.tm,fontStyle:"italic"}}>{mission.reason}</div>
+                    <div style={{...S.mn,fontSize:12,fontWeight:600,color:sc}}>{Math.round(s)}</div>
                   </div>
-                )}
-                <div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <div style={{...S.mn,fontSize:13,color:qp>=3?T.gd:T.tm}}>Quest: {a.questLabel}</div>
-                  <div style={{display:"flex",gap:2}}>{[0,1,2].map(i=>(<div key={i} style={{width:16,height:5,borderRadius:2,background:i<qp?a.color:T.bd}}/>))}</div>
-                  {qp>=3&&<span style={{fontSize:13,color:T.gd}}>✓</span>}
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ADVISORS */}
+          <div style={{...S.cd,padding:"14px 16px"}}>
+            <div style={S.sh}>🧠 Advisors</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {ADVISORS.map(a => {
+                const qp = questProgress[a.id]||0;
+                const mission = advisorMissions.find(m => m.advisor.id === a.id);
+                const missionMet = mission ? (alloc[mission.policy]||0) >= mission.amount : false;
+                return (
+                  <div key={a.id} style={{background:T.sa,border:`1px solid ${a.color}22`,borderRadius:10,padding:10}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                      <span style={{fontSize:18}}>{a.avatar}</span>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:700,color:a.color}}>{a.name}</div>
+                        <div style={{...S.lb,fontSize:10}}>{a.philosophy}</div>
+                      </div>
+                    </div>
+                    <div style={{fontSize:13,color:T.t2,lineHeight:1.4,marginBottom:5}}>{a.getAdvice(round,metrics,cumulative)}</div>
+                    {mission && (
+                      <div style={{background:missionMet?T.gb:T.sf,border:`1px solid ${missionMet?"#BBF7D0":T.bd}`,borderRadius:6,padding:"5px 7px",marginBottom:4}}>
+                        <div style={{fontSize:13,fontWeight:600,color:missionMet?T.gd:T.tx}}>
+                          {missionMet?"✓":"○"} {POLICIES.find(p=>p.id===mission.policy)?.icon} {mission.policyLabel} ≥ {mission.amount}
+                        </div>
+                        <div style={{fontSize:12,color:T.tm,fontStyle:"italic"}}>{mission.reason}</div>
+                      </div>
+                    )}
+                    <div style={{display:"flex",alignItems:"center",gap:4}}>
+                      <div style={{...S.mn,fontSize:12,color:qp>=3?T.gd:T.tm}}>Quest: {a.questLabel}</div>
+                      <div style={{display:"flex",gap:2}}>{[0,1,2].map(i=>(<div key={i} style={{width:16,height:5,borderRadius:2,background:i<qp?a.color:T.bd}}/>))}</div>
+                      {qp>=3&&<span style={{fontSize:12,color:T.gd}}>✓</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Glossary toggle */}
+          <div style={{textAlign:"center"}}>
+            <button onClick={()=>setShowGlossary(!showGlossary)} style={{...S.bt,background:T.sa,color:T.t2,border:`1px solid ${T.bd}`,padding:"8px 18px",fontSize:13}}>📖 {showGlossary?"Hide":"Show"} Glossary</button>
+          </div>
+          {showGlossary&&(<div style={{...S.cd,maxHeight:200,overflowY:"auto",padding:14}}>{Object.entries(GLOSSARY).slice(0,6).map(([k,v])=>(<div key={k} style={{marginBottom:8}}><span style={{...S.mn,fontSize:13,fontWeight:600,color:T.ac}}>{k}</span><span style={{fontSize:13,color:T.t2,marginLeft:6}}>{v.slice(0,80)}…</span></div>))}<div style={{fontSize:13,color:T.tm}}>Full glossary available on intro screen</div></div>)}
         </div>
-      </div>
-      {/* Glossary toggle only */}
-      <div style={{textAlign:"center",marginBottom:10}}>
-        <button onClick={()=>setShowGlossary(!showGlossary)} style={{...S.bt,background:T.sa,color:T.t2,border:`1px solid ${T.bd}`,padding:"6px 16px",fontSize:13}}>📖 {showGlossary?"Hide":"Show"} Glossary</button>
-      </div>
-      {showGlossary&&(<div style={{...S.cd,marginBottom:10,maxHeight:200,overflowY:"auto",padding:14}}>{Object.entries(GLOSSARY).slice(0,6).map(([k,v])=>(<div key={k} style={{marginBottom:8}}><span style={{...S.mn,fontSize:13,fontWeight:600,color:T.ac}}>{k}</span><span style={{fontSize:13,color:T.t2,marginLeft:6}}>{v.slice(0,80)}…</span></div>))}<div style={{fontSize:13,color:T.tm}}>Full glossary available on intro screen</div></div>)}
-      {/* Policies */}
-      <div style={grd(250)}>
-        {POLICIES.map(p => {
-          const v=alloc[p.id]||0,cv=cumulative[p.id]||0,t2Done=cv>=p.t2.thresh;
-          // Synergy indicators: which active synergies does this policy contribute to?
-          const policySynergies = activeSynergies.filter(s => s.ids.includes(p.id));
-          const inSynergy = policySynergies.length > 0;
-          return (<div key={p.id} style={{...S.cd,padding:12,borderColor:inSynergy?"#BBF7D0":v>0?p.color+"44":T.bd,background:v>0?p.color+"06":T.sf,marginBottom:0,borderLeft:inSynergy?`3px solid ${T.gd}`:""}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-              <Tip text={p.t2.info}><span style={{fontSize:12,fontWeight:600,cursor:"help"}}>{p.icon} {p.label}</span></Tip>
-              <span style={{...S.mn,fontSize:16,fontWeight:700,color:v>0?p.color:T.tf}}>{v}</span>
-            </div>
-            <div style={{fontSize:13,color:T.tm,marginBottom:5,lineHeight:1.3}}>{p.desc}</div>
-            <div style={{display:"flex",gap:5,marginBottom:4}}>
-              <button onClick={()=>adjust(p.id,-1)} style={{...S.bt,flex:1,padding:"4px 0",background:T.sa,color:T.t2,fontSize:14,border:`1px solid ${T.bd}`}}>−</button>
-              <button onClick={()=>adjust(p.id,1)} style={{...S.bt,flex:1,padding:"4px 0",background:p.color+"10",color:p.color,fontSize:14,border:`1px solid ${p.color}33`}}>+</button>
-            </div>
-            <div style={{display:"flex",gap:3,justifyContent:"center",marginBottom:2}}>{[0,1,2,3,4,5].map(i=><div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<v?p.color:T.bd}}/>)}</div>
-            <div style={{...S.mn,fontSize:13,color:t2Done?T.gd:T.tf,textAlign:"center"}}>{t2Done?`🔓 ${p.t2.name}`:`${cv}/${p.t2.thresh} → ${p.t2.name}`}</div>
-            {inSynergy && <div style={{...S.mn,fontSize:13,color:T.gd,textAlign:"center",marginTop:2}}>⚡ {policySynergies.map(s=>s.label).join(", ")}</div>}
-          </div>);
-        })}
-      </div>
-      {activeSynergies.length>0&&(<div style={{...S.cd,padding:"8px 12px",marginTop:10,borderColor:"#BBF7D0",background:T.gb}}>
-        <div style={{display:"flex",flexWrap:"wrap",gap:4}}>{activeSynergies.map(s=><span key={s.label} style={{...S.mn,fontSize:12,background:"#DCFCE7",border:"1px solid #BBF7D0",borderRadius:6,padding:"2px 6px",color:"#15803D"}}>⚡ {s.label}</span>)}</div>
-      </div>)}
-      <div style={{textAlign:"center",marginTop:12}}>
-        <Btn onClick={submitAllocation} disabled={pointsLeft>0}>Commit & Face {year} →</Btn>
-        {pointsLeft>0&&<div style={{...S.mn,fontSize:13,color:T.tf,marginTop:5}}>Allocate all {pointsLeft} points</div>}
-        {pointsLeft<totalPoints&&<button onClick={resetAlloc} style={{...S.bt,background:"transparent",color:T.tm,fontSize:12,marginTop:8,padding:"6px 16px",border:`1px solid ${T.bd}`}}>↺ Reset</button>}
+
       </div>
     </div></div>
   );
@@ -1672,47 +1700,46 @@ export default function Phase4() {
   if (phase === "summary") {
     const isGood = result.isGood;
     return (<div style={S.pg}><style>{fonts}{phaseCSS}</style><div ref={topRef}/><div className="phase-enter" style={S.in}>
-      <div style={{...S.lb,marginBottom:3}}>{cty?.flag||""} YEAR {year} OUTCOME · {diff.label.toUpperCase()}{weeklyMode?" · WEEKLY":""}</div>
-      <h2 style={{...S.hl,fontSize:24,marginBottom:3}}>{currentEvent.title}</h2>
-      <div style={{fontSize:12,color:T.tm,marginBottom:10}}>
+      <div style={{...S.lb,marginBottom:4}}>{cty?.flag||""} YEAR {year} OUTCOME · {diff.label.toUpperCase()}{weeklyMode?" · WEEKLY":""}</div>
+      <h2 style={{...S.hl,fontSize:28,marginBottom:4}}>{currentEvent.title}</h2>
+      <div style={{fontSize:13,color:T.tm,marginBottom:14}}>
         Chose: <strong style={{color:T.tx}}>{result.choiceLabel}</strong>
         {result.tm!==1&&<span style={{...S.mn,fontSize:13,marginLeft:8,color:result.tm>1?T.gd:T.bad}}>Trust ×{result.tm.toFixed(2)}</span>}
         {result.isChain&&<span style={{...S.mn,fontSize:13,marginLeft:8,color:T.wn}}>🔗 Chain</span>}
       </div>
-      <div style={{...S.cd,marginBottom:12,borderColor:isGood?"#BBF7D0":isGood===false?"#FECACA":T.bd,background:isGood?T.gb:isGood===false?T.bb:T.sf}}>
-        <p style={{fontSize:14,lineHeight:1.75,margin:0,color:T.t2}}>{result.narrative}</p>
+      <div style={{...S.cd,marginBottom:14,borderColor:isGood?"#BBF7D0":isGood===false?"#FECACA":T.bd,background:isGood?T.gb:isGood===false?T.bb:T.sf}}>
+        <p style={{fontSize:15,lineHeight:1.75,margin:0,color:T.t2}}>{result.narrative}</p>
       </div>
-      {/* Faction consequences */}
-      {factionMsg.length>0&&(<div style={{...S.cd,padding:"8px 12px",marginBottom:10}}>
-        <div style={{...S.lb,fontSize:13,marginBottom:4}}>FACTION EFFECTS THIS ROUND</div>
-        {factionMsg.map((m,i)=><div key={i} style={{fontSize:12,color:m.type==="bonus"?T.gd:T.bad,marginBottom:2}}>{m.icon} {m.msg} ({Object.entries(m.fx).map(([k,v])=>`${v>0?"+":""}${v} ${k}`).join(", ")})</div>)}
-      </div>)}
-      {/* DEMAND RESULT */}
-      {demandResult && (
-        <div style={{...S.cd,padding:"10px 14px",marginBottom:10,borderColor:demandResult.met?"#BBF7D0":"#FECACA",background:demandResult.met?T.gb:T.bb}}>
-          <div style={{...S.lb,fontSize:13,marginBottom:3,color:demandResult.met?T.gd:T.bad}}>{demandResult.met?"✓ DEMAND MET":"✗ DEMAND IGNORED"}</div>
-          <div style={{fontSize:12,color:T.t2}}>{demandResult.msg}</div>
-          <div style={{...S.mn,fontSize:13,color:demandResult.color,marginTop:3}}>{Object.entries(demandResult.fx).map(([k,v])=>`${v>0?"+":""}${v} ${METRICS.find(m=>m.id===k)?.label||k}`).join(", ")}</div>
-        </div>
-      )}
-      {/* MISSION RESULTS */}
-      {missionResults.length > 0 && (
-        <div style={{...S.cd,padding:"10px 14px",marginBottom:10,borderColor:"#C7D2FE",background:"#EFF4FF"}}>
-          <div style={{...S.lb,fontSize:13,marginBottom:4,color:T.ac}}>🎯 ADVISOR MISSION RESULTS</div>
-          {missionResults.map(mr => (
-            <div key={mr.advisor.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-              <span style={{fontSize:14}}>{mr.advisor.avatar}</span>
-              <span style={{fontSize:12,fontWeight:600,color:mr.advisor.color}}>{mr.advisor.name}</span>
-              <span style={{fontSize:13,color:T.t2}}>{mr.policy} ≥ 2:</span>
-              <span style={{...S.mn,fontSize:13,fontWeight:600,color:mr.met?T.gd:T.bad}}>{mr.met?"✓ Complete":"✗ Failed"}</span>
-              {mr.met && <span style={{...S.mn,fontSize:13,color:T.gd}}>→ Quest {questProgress[mr.advisor.id]||0}/3</span>}
-            </div>
-          ))}
-          {missionResults.filter(r=>r.met).length === 3 && (
-            <div style={{...S.mn,fontSize:13,color:"#7C3AED",marginTop:4,fontWeight:600}}>🌟 All 3 missions complete! Perfect advisory round.</div>
-          )}
-        </div>
-      )}
+      {/* Effects row — side by side */}
+      <div style={{display:"flex",flexWrap:"wrap",gap:10,marginBottom:14}}>
+        {factionMsg.length>0&&(<div style={{...S.cd,padding:"10px 14px",flex:"1 1 200px"}}>
+          <div style={S.sh}>⚔ Faction Effects</div>
+          {factionMsg.map((m,i)=><div key={i} style={{fontSize:13,color:m.type==="bonus"?T.gd:T.bad,marginBottom:3}}>{m.icon} {m.msg} ({Object.entries(m.fx).map(([k,v])=>`${v>0?"+":""}${v} ${k}`).join(", ")})</div>)}
+        </div>)}
+        {demandResult && (
+          <div style={{...S.cd,padding:"10px 14px",flex:"1 1 200px",borderColor:demandResult.met?"#BBF7D0":"#FECACA",background:demandResult.met?T.gb:T.bb}}>
+            <div style={S.sh}>{demandResult.met?"✓ Demand Met":"✗ Demand Ignored"}</div>
+            <div style={{fontSize:13,color:T.t2}}>{demandResult.msg}</div>
+            <div style={{...S.mn,fontSize:13,color:demandResult.color,marginTop:4}}>{Object.entries(demandResult.fx).map(([k,v])=>`${v>0?"+":""}${v} ${METRICS.find(m=>m.id===k)?.label||k}`).join(", ")}</div>
+          </div>
+        )}
+        {missionResults.length > 0 && (
+          <div style={{...S.cd,padding:"10px 14px",flex:"1 1 200px",borderColor:"#C7D2FE",background:"#EFF4FF"}}>
+            <div style={S.sh}>🎯 Mission Results</div>
+            {missionResults.map(mr => (
+              <div key={mr.advisor.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}}>
+                <span style={{fontSize:16}}>{mr.advisor.avatar}</span>
+                <span style={{fontSize:13,fontWeight:600,color:mr.advisor.color}}>{mr.advisor.name}</span>
+                <span style={{...S.mn,fontSize:13,fontWeight:600,color:mr.met?T.gd:T.bad}}>{mr.met?"✓ Complete":"✗ Failed"}</span>
+                {mr.met && <span style={{...S.mn,fontSize:12,color:T.gd}}>→ Quest {questProgress[mr.advisor.id]||0}/3</span>}
+              </div>
+            ))}
+            {missionResults.filter(r=>r.met).length === 3 && (
+              <div style={{...S.mn,fontSize:13,color:"#7C3AED",marginTop:4,fontWeight:600}}>🌟 All 3 missions complete!</div>
+            )}
+          </div>
+        )}
+      </div>
       {/* NEW TIER-2 UNLOCK NOTIFICATION */}
       {newUnlocks.length > 0 && (
         <div style={{...S.cd,padding:"16px 16px",marginBottom:12,borderColor:"#A78BFA",background:"linear-gradient(135deg, #F5F3FF, #EDE9FE)",border:"2px solid #A78BFA",borderRadius:16}}>
@@ -1740,18 +1767,24 @@ export default function Phase4() {
           ))}
         </div>
       )}
-      {(activeSynergies.length>0||tier2Unlocked.length>0)&&(<div style={{...S.cd,padding:"8px 12px",marginBottom:10,borderColor:"#BBF7D0",background:T.gb}}>
-        {activeSynergies.map(s=><div key={s.label} style={{...S.mn,fontSize:13,color:"#15803D",marginBottom:1}}>⚡ {s.label}: {Object.entries(s.bonus).map(([k,v])=>`+${v} ${k}`).join(", ")}</div>)}
-        {tier2Unlocked.map(t=><div key={t.name} style={{...S.mn,fontSize:13,color:"#15803D",marginBottom:1}}>🔓 {t.name}</div>)}
-        {ADVISORS.filter(a=>questProgress[a.id]>=3).map(a=><div key={a.id} style={{...S.mn,fontSize:13,color:"#15803D"}}>🎯 {a.questLabel}: +2 trust, +1 innovation</div>)}
-      </div>)}
-      <div style={{...S.cd,marginBottom:12}}>
-        <div style={{...S.lb,fontSize:13,marginBottom:8}}>METRICS</div>
-        {METRICS.map(m=><MetricBar key={m.id} metric={m} value={metrics[m.id]} prev={prevMetrics[m.id]} history={metricHistory.map(h=>h[m.id])}/>)}
+      {/* Two-column: Metrics + Bonuses side by side */}
+      <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:14}}>
+        <div style={{...S.cd,flex:"1 1 55%",minWidth:280}}>
+          <div style={S.sh}>📊 Updated Metrics</div>
+          {METRICS.map(m=><MetricBar key={m.id} metric={m} value={metrics[m.id]} prev={prevMetrics[m.id]} history={metricHistory.map(h=>h[m.id])}/>)}
+        </div>
+        <div style={{flex:"1 1 35%",minWidth:200,display:"flex",flexDirection:"column",gap:10}}>
+          {(activeSynergies.length>0||tier2Unlocked.length>0)&&(<div style={{...S.cd,padding:"10px 14px",borderColor:"#BBF7D0",background:T.gb}}>
+            <div style={S.sh}>⚡ Active Bonuses</div>
+            {activeSynergies.map(s=><div key={s.label} style={{...S.mn,fontSize:13,color:"#15803D",marginBottom:3}}>⚡ {s.label}: {Object.entries(s.bonus).map(([k,v])=>`+${v} ${k}`).join(", ")}</div>)}
+            {tier2Unlocked.map(t=><div key={t.name} style={{...S.mn,fontSize:13,color:"#15803D",marginBottom:3}}>🔓 {t.name}</div>)}
+            {ADVISORS.filter(a=>questProgress[a.id]>=3).map(a=><div key={a.id} style={{...S.mn,fontSize:13,color:"#15803D"}}>🎯 {a.questLabel}: +2 trust, +1 innovation</div>)}
+          </div>)}
+          {bonusPoints>0&&(<div style={{...S.cd,padding:"12px 14px",borderColor:"#C7D2FE",background:"#EFF4FF",textAlign:"center"}}>
+            <span style={{fontSize:14,color:T.ac,fontWeight:600}}>📈 +{bonusPoints} bonus points next year</span>
+          </div>)}
+        </div>
       </div>
-      {bonusPoints>0&&(<div style={{...S.cd,padding:"8px 12px",marginBottom:12,borderColor:"#C7D2FE",background:"#EFF4FF",textAlign:"center"}}>
-        <span style={{fontSize:13,color:T.ac}}>📈 +{bonusPoints} bonus points next year</span>
-      </div>)}
       <div style={{textAlign:"center"}}><Btn onClick={nextRound}>{endlessMode?`Survive ${year+1} →`:round+1>=ROUNDS?"Final Assessment →":`Proceed to ${year+1} →`}</Btn></div>
     </div></div>);
   }
