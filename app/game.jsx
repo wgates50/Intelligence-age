@@ -734,6 +734,20 @@ async function clearSave() {
 const RUNS_KEY = "intelligence-age-runs";
 const ACH_KEY = "intelligence-age-achievements";
 const TUTORIAL_KEY = "intelligence-age-tutorial-seen";
+const HANDLE_KEY = "intelligence-age-handle";
+
+async function submitToLeaderboard(payload){
+  try {
+    const r = await fetch("/api/leaderboard", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    return await r.json();
+  } catch { return {ok:false}; }
+}
+async function fetchLeaderboard(){
+  try {
+    const r = await fetch("/api/leaderboard");
+    return await r.json();
+  } catch { return {enabled:false,entries:[]}; }
+}
 function lsGet(key, fallback){ try { if (typeof window==="undefined") return fallback; const v=window.localStorage?.getItem(key); return v?JSON.parse(v):fallback; } catch(e){ return fallback; } }
 function lsSet(key, val){ try { if (typeof window!=="undefined") window.localStorage?.setItem(key, JSON.stringify(val)); } catch(e){} }
 function loadRuns(){ return lsGet(RUNS_KEY, []); }
@@ -961,6 +975,10 @@ export default function Phase4() {
   const [showSources, setShowSources] = useState(false);
   const [tutorialDismissed, setTutorialDismissed] = useState(true); // default true, set false on mount if not seen
   const [runRecorded, setRunRecorded] = useState(false);
+  const [handle, setHandle] = useState("");
+  const [showLb, setShowLb] = useState(false);
+  const [lb, setLb] = useState({enabled:null,entries:[]});
+  const [lbSubmitState, setLbSubmitState] = useState("idle"); // idle|submitting|done|disabled
   const topRef = useRef(null);
   const rngRef = useRef(null); // seeded PRNG ref for weekly mode
 
@@ -984,13 +1002,18 @@ export default function Phase4() {
 
   useEffect(() => { topRef.current?.scrollIntoView({behavior:"smooth"}); }, [phase]);
 
-  // Load persisted runs + achievements + tutorial flag on mount
+  // Load persisted runs + achievements + tutorial flag + handle on mount
   useEffect(() => {
     setPastRuns(loadRuns());
     setUnlockedAch(loadAchievements());
     const seen = lsGet(TUTORIAL_KEY, false);
     if (!seen) setTutorialDismissed(false);
+    const h = lsGet(HANDLE_KEY, "");
+    if (h) setHandle(h);
   }, []);
+
+  const loadLb = () => { fetchLeaderboard().then(setLb); };
+  useEffect(() => { if (showLb) loadLb(); }, [showLb]);
 
   // Record run + unlock achievements when phase first becomes "end"
   useEffect(() => {
@@ -1526,7 +1549,43 @@ export default function Phase4() {
           <button onClick={() => setShowSources(!showSources)} style={{...S.bt,background:"transparent",color:T.tm,fontSize:12,border:`1px solid ${T.bd}`,padding:"6px 16px"}}>📚 {showSources ? "Hide" : "Show"} Sources ({SOURCES.length})</button>
           <button onClick={() => setShowRuns(!showRuns)} style={{...S.bt,background:"transparent",color:T.tm,fontSize:12,border:`1px solid ${T.bd}`,padding:"6px 16px"}}>🏅 Best Runs ({pastRuns.length})</button>
           <button onClick={() => setShowAch(!showAch)} style={{...S.bt,background:"transparent",color:T.tm,fontSize:12,border:`1px solid ${T.bd}`,padding:"6px 16px"}}>🏆 Achievements ({Object.keys(unlockedAch).length}/{ACHIEVEMENTS.length})</button>
+          <button onClick={() => setShowLb(!showLb)} style={{...S.bt,background:"transparent",color:T.tm,fontSize:12,border:`1px solid ${T.bd}`,padding:"6px 16px"}}>🌐 {showLb ? "Hide" : "Show"} Leaderboard</button>
         </div>
+
+        {showLb && (
+          <div style={{...S.cd,textAlign:"left",maxWidth:900,margin:"12px auto 0",maxHeight:460,overflowY:"auto"}}>
+            <div style={{...S.sh,color:T.tm,marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span>Global Leaderboard</span>
+              <button onClick={loadLb} style={{...S.bt,background:"transparent",color:T.tm,fontSize:11,border:`1px solid ${T.bd}`,padding:"3px 10px"}}>↻ Refresh</button>
+            </div>
+            {lb.enabled === false ? (
+              <div style={{fontSize:13,color:T.tm,lineHeight:1.6}}>
+                The shared leaderboard isn't connected yet. To enable it, add an <b>Upstash Redis</b> (or Vercel KV) integration to the project in the Vercel dashboard → Storage tab. Once the env vars (<span style={{...S.mn}}>KV_REST_API_URL</span>, <span style={{...S.mn}}>KV_REST_API_TOKEN</span>) are set, your runs will post here automatically.
+              </div>
+            ) : lb.enabled === null ? (
+              <div style={{fontSize:13,color:T.tm,fontStyle:"italic"}}>Loading…</div>
+            ) : lb.entries?.length === 0 ? (
+              <div style={{fontSize:13,color:T.tm,fontStyle:"italic"}}>No runs posted yet — finish a run and submit yours to be first on the board.</div>
+            ) : (
+              <div style={{display:"grid",gap:6}}>
+                {lb.entries.slice(0,20).map((r,i) => {
+                  const gc = r.grade==="A"?T.gd:r.grade==="B"?T.ac:r.grade==="C"?T.wn:T.bad;
+                  return (
+                    <div key={`${r.id}-${i}`} style={{display:"grid",gridTemplateColumns:"32px 40px 1fr auto",alignItems:"center",gap:10,padding:"8px 12px",background:T.sa,border:`1px solid ${T.bd}`,borderRadius:8}}>
+                      <div style={{...S.mn,fontSize:14,fontWeight:700,color:T.tm,textAlign:"center"}}>{i+1}</div>
+                      <div style={{fontFamily:"'Newsreader',serif",fontSize:22,fontWeight:900,color:gc,textAlign:"center"}}>{r.collapsed?"💥":r.grade}</div>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:600,color:T.tx}}>{r.handle || "anon"} — {r.flag||"🏳"} {r.countryLabel||r.country} · {r.difficultyLabel||r.difficulty}{r.endless?` · endless +${r.endlessRounds}`:""}</div>
+                        <div style={{...S.mn,fontSize:11,color:T.tm}}>avg {r.avg} · score {r.score}{r.synergies?` · ${r.synergies} syn`:""}{r.tier2?` · ${r.tier2} unlock`:""}</div>
+                      </div>
+                      <div style={{...S.mn,fontSize:14,fontWeight:700,color:gc}}>{r.avg}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {showGlossary && (
           <div style={{...S.cd,textAlign:"left",maxWidth:900,margin:"12px auto 0",maxHeight:400,overflowY:"auto"}}>
@@ -2152,6 +2211,37 @@ export default function Phase4() {
         )}
         <Btn onClick={()=>exportOnePager({metrics,cumulative,history,cty,diff,endlessMode,weeklyMode,collapsed,round,grade,questsDone,tier2Unlocked,chainCount,avg,narrative})} color={T.ac}>📄 Export One-Pager</Btn>
         <Btn onClick={restart} color={gc}>Play Again →</Btn>
+      </div>
+
+      <div style={{...S.cd,maxWidth:560,margin:"18px auto 0",padding:14}}>
+        <div style={{...S.sh,color:T.tm,marginBottom:8,fontSize:12}}>🌐 Post to Global Leaderboard</div>
+        {lbSubmitState==="done" ? (
+          <div style={{fontSize:13,color:T.gd}}>Posted! Your run is on the board.</div>
+        ) : lbSubmitState==="disabled" ? (
+          <div style={{fontSize:12,color:T.tm,lineHeight:1.5}}>Leaderboard isn't connected on this deployment yet (requires Upstash Redis / Vercel KV). Your run is saved locally.</div>
+        ) : (
+          <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+            <input value={handle} onChange={e=>setHandle(e.target.value.slice(0,24))} placeholder="your handle" maxLength={24} style={{flex:"1 1 180px",padding:"8px 10px",background:T.sa,color:T.tx,border:`1px solid ${T.bd}`,borderRadius:6,fontSize:13,fontFamily:"inherit"}} />
+            <button disabled={!handle.trim() || lbSubmitState==="submitting"} onClick={async()=>{
+              const h=handle.trim(); if(!h) return;
+              lsSet(HANDLE_KEY,h); setLbSubmitState("submitting");
+              const res = await submitToLeaderboard({
+                handle:h, id:Date.now(),
+                country, countryLabel:cty?.label, flag:cty?.flag,
+                difficulty, difficultyLabel:diff.label,
+                grade, avg, endless:endlessMode,
+                endlessRounds: endlessMode?Math.max(0,round-ROUNDS):0,
+                collapsed, weekly:weeklyMode,
+                synergies: [...new Set(history.flatMap(h=>h.synergies||[]))].length,
+                tier2: tier2Unlocked.length,
+                quests: questsDone,
+              });
+              setLbSubmitState(res?.ok ? "done" : (res?.enabled===false ? "disabled" : "idle"));
+            }} style={{...S.bt,background:T.ac,color:"#fff",padding:"8px 16px",fontSize:13,opacity:(!handle.trim()||lbSubmitState==="submitting")?0.5:1}}>
+              {lbSubmitState==="submitting" ? "Posting…" : "Post run"}
+            </button>
+          </div>
+        )}
       </div>
       {!endlessMode && !collapsed && (
         <div style={{...S.mn,fontSize:13,color:T.tm,marginTop:8,maxWidth:600,marginLeft:"auto",marginRight:"auto"}}>
