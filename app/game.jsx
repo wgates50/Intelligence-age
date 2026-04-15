@@ -730,6 +730,104 @@ async function clearSave() {
   try { if (window.storage) await window.storage.delete(SAVE_KEY); } catch(e) {}
 }
 
+// ── RUNS + ACHIEVEMENTS (localStorage) ──
+const RUNS_KEY = "intelligence-age-runs";
+const ACH_KEY = "intelligence-age-achievements";
+const TUTORIAL_KEY = "intelligence-age-tutorial-seen";
+function lsGet(key, fallback){ try { if (typeof window==="undefined") return fallback; const v=window.localStorage?.getItem(key); return v?JSON.parse(v):fallback; } catch(e){ return fallback; } }
+function lsSet(key, val){ try { if (typeof window!=="undefined") window.localStorage?.setItem(key, JSON.stringify(val)); } catch(e){} }
+function loadRuns(){ return lsGet(RUNS_KEY, []); }
+function saveRun(run){ const all=loadRuns(); all.unshift(run); lsSet(RUNS_KEY, all.slice(0,50)); return all; }
+function loadAchievements(){ return lsGet(ACH_KEY, {}); }
+function unlockAchievements(ids){ const cur=loadAchievements(); const newly=[]; ids.forEach(id=>{ if(!cur[id]){ cur[id]=Date.now(); newly.push(id); }}); lsSet(ACH_KEY, cur); return newly; }
+
+const ACHIEVEMENTS = [
+  {id:"first_run",name:"First Steps",icon:"🌱",desc:"Complete your first playthrough"},
+  {id:"grade_a",name:"Policy Director",icon:"🏆",desc:"Finish with an A grade"},
+  {id:"grade_a_hard",name:"Steady Hand",icon:"🎖",desc:"Finish with an A on Hard difficulty"},
+  {id:"grade_a_crisis",name:"Threshold Walker",icon:"⚡",desc:"Finish with an A on Crisis difficulty"},
+  {id:"full_synergy",name:"All Connected",icon:"🔗",desc:"Activate every synergy in one run"},
+  {id:"all_tier2",name:"Full Unlock",icon:"🔓",desc:"Unlock all 10 tier-2 policies in one run"},
+  {id:"all_quests",name:"Advisor's Champion",icon:"⭐",desc:"Complete all 3 advisor quests in one run"},
+  {id:"endless_5",name:"Sustained",icon:"♾",desc:"Survive 5 endless rounds past the Threshold"},
+  {id:"endless_10",name:"Unbowed",icon:"🌌",desc:"Survive 10 endless rounds past the Threshold"},
+  {id:"five_runs",name:"Experienced",icon:"📜",desc:"Complete 5 playthroughs"},
+  {id:"all_countries",name:"World Traveler",icon:"🌍",desc:"Complete a run with every country"},
+  {id:"weekly",name:"Weekly Warrior",icon:"🗓",desc:"Complete a weekly challenge run"},
+];
+
+// ── SOURCE DOCUMENTS ──
+const SOURCES = [
+  {label:"Industrial Policy for the Intelligence Age",org:"OpenAI · April 2026",desc:"Growth, equality, safety, and the case for keeping people first.",url:"https://openai.com/global-affairs/industrial-policy-for-the-intelligence-age/"},
+  {label:"Responsible Scaling Policy v3.0",org:"Anthropic · February 2026",desc:"Graduated ASL safety levels that trigger stronger safeguards as capabilities increase.",url:"https://www.anthropic.com/news/announcing-our-updated-responsible-scaling-policy"},
+  {label:"Future of Jobs Report 2025",org:"World Economic Forum",desc:"92M jobs displaced, 170M created by 2030. The skills shift behind faction dynamics.",url:"https://www.weforum.org/publications/the-future-of-jobs-report-2025/"},
+  {label:"America's AI Action Plan",org:"The White House · July 2025",desc:"Infrastructure, energy, and export policy framing for the US playthrough.",url:"https://www.whitehouse.gov/wp-content/uploads/2025/07/Americas-AI-Action-Plan.pdf"},
+  {label:"Critique: Industrial Policy contradictions",org:"Tech Policy Press",desc:"Independent read on tensions between the OpenAI paper and earlier SB1047 opposition.",url:"https://www.techpolicy.press/"},
+];
+
+// ── ONE-PAGER EXPORT ──
+function exportOnePager(d){
+  const esc = (s) => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const metricRows = [
+    {id:"growth",label:"GDP Growth"},{id:"equality",label:"Equality"},{id:"trust",label:"Public Trust"},
+    {id:"safety_score",label:"AI Safety"},{id:"innovation",label:"Innovation"},{id:"wellbeing",label:"Wellbeing"},
+    {id:"geopolitics",label:"Global Standing"},
+  ].map(m=>`<tr><td>${m.label}</td><td class="r">${d.metrics[m.id]}</td></tr>`).join("");
+  const policyRows = Object.entries(d.cumulative).sort((a,b)=>b[1]-a[1]).filter(([,v])=>v>0).map(([k,v])=>`<tr><td>${esc(k)}</td><td class="r">${v}</td></tr>`).join("");
+  const timeline = (d.history||[]).map(h=>`<li><b>${esc(h.year)} — ${esc(h.eventTitle)}</b> · ${esc(h.choiceLabel)}<div class="sm">${esc(h.narrative||"")}</div></li>`).join("");
+  const title = `The Intelligence Age — ${d.cty?.label||""} · ${d.diff.label}${d.endlessMode?" · Endless":""}${d.weeklyMode?" · Weekly":""}`;
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)} — Policy Brief</title>
+<style>
+  *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1a1a1a;max-width:780px;margin:32px auto;padding:0 24px;line-height:1.5}
+  h1{font-family:Georgia,serif;font-size:28px;margin:0 0 4px}
+  h2{font-size:14px;letter-spacing:0.15em;text-transform:uppercase;color:#666;margin:24px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px}
+  .meta{color:#666;font-size:13px;margin-bottom:20px}
+  .grade{display:inline-block;font-family:Georgia,serif;font-size:64px;font-weight:900;line-height:1;margin-right:20px;vertical-align:middle}
+  .stats{display:inline-block;vertical-align:middle}
+  .stats div{margin:2px 0;font-size:14px}
+  table{width:100%;border-collapse:collapse;margin-top:6px}
+  td{padding:4px 6px;border-bottom:1px solid #eee;font-size:13px}
+  td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .narr{font-size:14px;color:#333}
+  ol{padding-left:20px;font-size:13px}
+  ol li{margin-bottom:8px}
+  .sm{color:#666;font-size:12px;margin-top:2px}
+  .foot{margin-top:32px;padding-top:12px;border-top:1px solid #ddd;font-size:11px;color:#888;text-align:center}
+  @media print { body { margin: 0; } }
+  .btn{display:inline-block;padding:8px 16px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-right:8px}
+  @media print { .noprint { display: none } }
+</style></head><body>
+<div class="noprint" style="margin-bottom:16px">
+  <button class="btn" onclick="window.print()">Print / Save as PDF</button>
+  <button class="btn" style="background:#fff;color:#1a1a1a;border:1px solid #ccc" onclick="window.close()">Close</button>
+</div>
+<h1>${esc(title)}</h1>
+<div class="meta">Policy Brief · ${new Date().toLocaleDateString()}</div>
+<div>
+  <span class="grade">${d.collapsed?"💥":esc(d.grade.grade)}</span>
+  <span class="stats">
+    <div><b>${d.collapsed?"System Collapse":esc(d.grade.title)}</b></div>
+    <div>Average metric: <b>${d.avg}</b> · Synergy chains: ${d.chainCount} · Quests: ${d.questsDone.length}/3 · Tier-2 unlocks: ${d.tier2Unlocked.length}</div>
+    <div>${d.endlessMode?`Survived ${d.round-8} endless rounds · `:""}${esc(d.cty?.label||"")}, ${esc(d.diff.label)}</div>
+  </span>
+</div>
+<h2>Executive Summary</h2>
+<p class="narr">${esc(d.narrative)}</p>
+<div class="two">
+  <div><h2>Final Metrics</h2><table>${metricRows}</table></div>
+  <div><h2>Lifetime Investment</h2><table>${policyRows||"<tr><td>None</td></tr>"}</table></div>
+</div>
+<h2>Key Decisions</h2>
+<ol>${timeline}</ol>
+<div class="foot">Generated by The Intelligence Age — a policy simulation based on OpenAI's "Industrial Policy for the Intelligence Age" (2026), Anthropic's RSP v3.0, WEF Future of Jobs Report 2025, and the White House AI Action Plan (2025).</div>
+</body></html>`;
+  const w = window.open("", "_blank");
+  if (!w) { alert("Please allow popups to export the one-pager."); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+}
+
 // ── COMPONENTS ──
 function Ring({value,color}){const sz=36,st=2.5,r=(sz-st)/2,ci=2*Math.PI*r;return(<svg width={sz} height={sz} style={{transform:"rotate(-90deg)"}}><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={T.bd} strokeWidth={st}/><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={color} strokeWidth={st} strokeDasharray={ci} strokeDashoffset={ci-(value/100)*ci} strokeLinecap="round" style={{transition:"stroke-dashoffset 0.8s ease"}}/></svg>);}
 
@@ -855,6 +953,14 @@ export default function Phase4() {
   const [demandResult, setDemandResult] = useState(null); // {met, msg, fx}
   const [advisorMissions, setAdvisorMissions] = useState([]); // [{advisor, policy, amount, rewardFx, desc}]
   const [missionResults, setMissionResults] = useState([]); // [{advisor, met, desc}]
+  const [pastRuns, setPastRuns] = useState([]);
+  const [unlockedAch, setUnlockedAch] = useState({});
+  const [newAch, setNewAch] = useState([]);
+  const [showRuns, setShowRuns] = useState(false);
+  const [showAch, setShowAch] = useState(false);
+  const [showSources, setShowSources] = useState(false);
+  const [tutorialDismissed, setTutorialDismissed] = useState(true); // default true, set false on mount if not seen
+  const [runRecorded, setRunRecorded] = useState(false);
   const topRef = useRef(null);
   const rngRef = useRef(null); // seeded PRNG ref for weekly mode
 
@@ -877,6 +983,57 @@ export default function Phase4() {
   };
 
   useEffect(() => { topRef.current?.scrollIntoView({behavior:"smooth"}); }, [phase]);
+
+  // Load persisted runs + achievements + tutorial flag on mount
+  useEffect(() => {
+    setPastRuns(loadRuns());
+    setUnlockedAch(loadAchievements());
+    const seen = lsGet(TUTORIAL_KEY, false);
+    if (!seen) setTutorialDismissed(false);
+  }, []);
+
+  // Record run + unlock achievements when phase first becomes "end"
+  useEffect(() => {
+    if (phase !== "end" || runRecorded) return;
+    const avg = Math.round(Object.values(metrics).reduce((a,b)=>a+b,0)/METRICS.length);
+    const g = getGrade(metrics).grade;
+    const run = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      country: country, countryLabel: cty?.label, flag: cty?.flag,
+      difficulty: difficulty, difficultyLabel: diff.label,
+      grade: g, avg, metrics: {...metrics},
+      rounds: round, endless: endlessMode, endlessRounds: endlessMode ? Math.max(0, round-ROUNDS) : 0,
+      collapsed, weekly: weeklyMode,
+      cumulative: {...cumulative},
+      synergiesHit: [...new Set(history.flatMap(h=>h.synergies||[]))],
+      tier2Count: tier2Unlocked.length,
+      questsDone: ADVISORS.filter(a=>questProgress[a.id]>=3).length,
+    };
+    const allRuns = saveRun(run);
+    setPastRuns(allRuns);
+
+    const ids = ["first_run"];
+    if (g === "A") ids.push("grade_a");
+    if (g === "A" && difficulty === "hard") ids.push("grade_a_hard");
+    if (g === "A" && difficulty === "crisis") ids.push("grade_a_crisis");
+    const allSynHit = SYNERGIES.every(s => run.synergiesHit.includes(s.label));
+    if (allSynHit) ids.push("full_synergy");
+    if (tier2Unlocked.length >= POLICIES.length) ids.push("all_tier2");
+    if (run.questsDone >= 3) ids.push("all_quests");
+    if (endlessMode && run.endlessRounds >= 5) ids.push("endless_5");
+    if (endlessMode && run.endlessRounds >= 10) ids.push("endless_10");
+    if (allRuns.length >= 5) ids.push("five_runs");
+    const countriesPlayed = new Set(allRuns.map(r=>r.country).filter(Boolean));
+    if (COUNTRIES.every(c => countriesPlayed.has(c.id))) ids.push("all_countries");
+    if (weeklyMode) ids.push("weekly");
+    const newly = unlockAchievements(ids);
+    setUnlockedAch(loadAchievements());
+    if (newly.length > 0) setNewAch(newly);
+    setRunRecorded(true);
+  }, [phase]);
+
+  const dismissTutorial = () => { setTutorialDismissed(true); lsSet(TUTORIAL_KEY, true); };
 
   // Auto-load saved game
   useEffect(() => {
@@ -1136,9 +1293,11 @@ export default function Phase4() {
     saveGame({round,metrics:final,cumulative,factionSat:nfs||factionSat,questProgress:questProgress,history:[...history,{year,eventTitle:currentEvent.title,category:currentEvent.category,choiceLabel:choice.label,narrative:res.narrative,synergies:activeSynergies.map(s=>s.label),microText:microResult?.msg,microLabel:microResult?.label,isChain:!!currentEvent.chainStep,isGood:res.good,factionMsgs:factionMsg}],metricHistory:[...metricHistory,{...final}],difficulty,bonusPoints:avg>=70?2:avg>=55?1:0,pendingChains,usedEvents});
   };
 
-  const nextRound = () => {
+  const nextRound = (opts={}) => {
+    const forceEndless = opts.forceEndless === true;
+    const isEndless = endlessMode || forceEndless;
     // Check for endless mode collapse
-    if (endlessMode) {
+    if (isEndless && !forceEndless) {
       const vals = Object.values(metrics);
       const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
       const min = Math.min(...vals);
@@ -1146,10 +1305,10 @@ export default function Phase4() {
         setCollapsed(true); setPhase("end"); playSound("bad"); clearSave(); return;
       }
     }
-    if (!endlessMode && round+1>=ROUNDS) { setPhase("end"); playSound("grade"); clearSave(); return; }
+    if (!isEndless && round+1>=ROUNDS) { setPhase("end"); playSound("grade"); clearSave(); return; }
     const newRd = round + 1;
     // Endless mode: escalating difficulty
-    const endlessPenalty = endlessMode ? Math.floor((newRd - ROUNDS) / 2) : 0;
+    const endlessPenalty = isEndless && newRd >= ROUNDS ? Math.floor((newRd - ROUNDS) / 2) : 0;
     const effectivePts = Math.max(3, basePts + bonusPoints - endlessPenalty);
     setRound(newRd); setAlloc(emptyAlloc()); setPointsLeft(effectivePts);
     setCurrentEvent(null); setResult(null); setChoiceIdx(null); setMicroEvent(null); setMicroChoiceIdx(null); setMicroResult(null); setPreMicroMetrics(null);
@@ -1162,7 +1321,7 @@ export default function Phase4() {
 
   const startEndless = () => {
     setEndlessMode(true); setCollapsed(false);
-    nextRound();
+    nextRound({forceEndless:true});
   };
 
   const restart = () => {
@@ -1175,6 +1334,7 @@ export default function Phase4() {
     setFactionDemand(null); setDemandResult(null); setAdvisorMissions([]); setMissionResults([]);
     setEndlessMode(false); setCollapsed(false);
     setCountry(null); setWeeklyMode(false); rngRef.current = null;
+    setRunRecorded(false); setNewAch([]);
   };
 
   const grade = getGrade(metrics);
@@ -1344,12 +1504,30 @@ export default function Phase4() {
           </Btn>
         </div>
 
-        {/* Glossary link */}
-        <div className="fu" style={{animationDelay:"1s",marginTop:16}}>
-          <button onClick={() => setShowGlossary(!showGlossary)} style={{...S.bt,background:"transparent",color:T.tm,fontSize:12,border:`1px solid ${T.bd}`,padding:"6px 16px"}}>
-            📖 {showGlossary ? "Hide" : "Show"} Glossary ({Object.keys(GLOSSARY).length} terms)
-          </button>
+        {/* Optional tutorial */}
+        {!tutorialDismissed && (
+          <div className="fu" style={{...S.cd,maxWidth:820,margin:"8px auto 20px",textAlign:"left",borderColor:T.ac,background:`${T.ac}0A`,animationDelay:"0.95s"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,marginBottom:8}}>
+              <div style={{...S.sh,color:T.ac}}>How to play (skippable)</div>
+              <button onClick={dismissTutorial} style={{background:"transparent",border:`1px solid ${T.bd}`,borderRadius:6,padding:"4px 10px",fontSize:12,color:T.tm,cursor:"pointer"}}>Skip — I'll learn as I go</button>
+            </div>
+            <ol style={{margin:0,paddingLeft:20,fontSize:14,color:T.t2,lineHeight:1.7}}>
+              <li><b>Pick a country and difficulty.</b> Each country has different starting metrics and policy strengths.</li>
+              <li><b>Allocate points across 10 policies</b> each round. Watch for synergies (green borders) and tier-2 unlocks.</li>
+              <li><b>Handle events, micro-decisions, faction demands, and advisor missions</b> — they all shape the metrics.</li>
+              <li><b>Survive 8 rounds</b> and earn a grade — or continue into endless mode if you're up for it.</li>
+            </ol>
+          </div>
+        )}
+
+        {/* Action row: Glossary / Sources / Best Runs / Achievements */}
+        <div className="fu" style={{animationDelay:"1s",marginTop:16,display:"flex",flexWrap:"wrap",justifyContent:"center",gap:8}}>
+          <button onClick={() => setShowGlossary(!showGlossary)} style={{...S.bt,background:"transparent",color:T.tm,fontSize:12,border:`1px solid ${T.bd}`,padding:"6px 16px"}}>📖 {showGlossary ? "Hide" : "Show"} Glossary ({Object.keys(GLOSSARY).length})</button>
+          <button onClick={() => setShowSources(!showSources)} style={{...S.bt,background:"transparent",color:T.tm,fontSize:12,border:`1px solid ${T.bd}`,padding:"6px 16px"}}>📚 {showSources ? "Hide" : "Show"} Sources ({SOURCES.length})</button>
+          <button onClick={() => setShowRuns(!showRuns)} style={{...S.bt,background:"transparent",color:T.tm,fontSize:12,border:`1px solid ${T.bd}`,padding:"6px 16px"}}>🏅 Best Runs ({pastRuns.length})</button>
+          <button onClick={() => setShowAch(!showAch)} style={{...S.bt,background:"transparent",color:T.tm,fontSize:12,border:`1px solid ${T.bd}`,padding:"6px 16px"}}>🏆 Achievements ({Object.keys(unlockedAch).length}/{ACHIEVEMENTS.length})</button>
         </div>
+
         {showGlossary && (
           <div style={{...S.cd,textAlign:"left",maxWidth:900,margin:"12px auto 0",maxHeight:400,overflowY:"auto"}}>
             {Object.entries(GLOSSARY).map(([term,def]) => (
@@ -1358,6 +1536,67 @@ export default function Phase4() {
                 <div style={{fontSize:12,color:T.t2,lineHeight:1.6}}>{def}</div>
               </div>
             ))}
+          </div>
+        )}
+
+        {showSources && (
+          <div style={{...S.cd,textAlign:"left",maxWidth:900,margin:"12px auto 0"}}>
+            <div style={{...S.sh,color:T.tm,marginBottom:10}}>Research Sources</div>
+            <div style={{display:"grid",gap:10}}>
+              {SOURCES.map(s => (
+                <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer" style={{textDecoration:"none",color:"inherit",padding:"10px 12px",background:T.sa,border:`1px solid ${T.bd}`,borderRadius:8,display:"block"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",gap:10,marginBottom:3,flexWrap:"wrap"}}>
+                    <span style={{fontSize:14,fontWeight:700,color:T.ac}}>{s.label} ↗</span>
+                    <span style={{...S.mn,fontSize:12,color:T.tm}}>{s.org}</span>
+                  </div>
+                  <div style={{fontSize:13,color:T.t2,lineHeight:1.5}}>{s.desc}</div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {showRuns && (
+          <div style={{...S.cd,textAlign:"left",maxWidth:900,margin:"12px auto 0",maxHeight:420,overflowY:"auto"}}>
+            <div style={{...S.sh,color:T.tm,marginBottom:10}}>Your Best Runs {pastRuns.length>0 && <span style={{fontSize:12,color:T.tm,fontWeight:400,textTransform:"none",letterSpacing:0}}>· sorted by avg</span>}</div>
+            {pastRuns.length===0 ? <div style={{fontSize:13,color:T.tm,fontStyle:"italic"}}>No runs yet — play one to see it here.</div> : (
+              <div style={{display:"grid",gap:6}}>
+                {[...pastRuns].sort((a,b)=>b.avg-a.avg).slice(0,10).map(r => {
+                  const gc = r.grade==="A"?T.gd:r.grade==="B"?T.ac:r.grade==="C"?T.wn:T.bad;
+                  return (
+                    <div key={r.id} style={{display:"grid",gridTemplateColumns:"40px 1fr auto",alignItems:"center",gap:10,padding:"8px 12px",background:T.sa,border:`1px solid ${T.bd}`,borderRadius:8}}>
+                      <div style={{fontFamily:"'Newsreader',serif",fontSize:24,fontWeight:900,color:gc,textAlign:"center"}}>{r.collapsed?"💥":r.grade}</div>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:600,color:T.tx}}>{r.flag} {r.countryLabel} · {r.difficultyLabel}{r.endless?` · endless +${r.endlessRounds}`:""}{r.weekly?" · weekly":""}</div>
+                        <div style={{...S.mn,fontSize:12,color:T.tm}}>{new Date(r.date).toLocaleDateString()} · avg {r.avg} · {r.synergiesHit.length} synergies · {r.tier2Count} unlocks</div>
+                      </div>
+                      <div style={{...S.mn,fontSize:14,fontWeight:700,color:gc}}>{r.avg}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {pastRuns.length>0 && <button onClick={()=>{if(confirm("Clear all run history?")){lsSet(RUNS_KEY,[]);setPastRuns([]);}}} style={{...S.bt,marginTop:10,background:"transparent",color:T.bad,border:`1px solid ${T.bad}33`,padding:"4px 12px",fontSize:12}}>Clear history</button>}
+          </div>
+        )}
+
+        {showAch && (
+          <div style={{...S.cd,textAlign:"left",maxWidth:900,margin:"12px auto 0"}}>
+            <div style={{...S.sh,color:T.tm,marginBottom:10}}>Achievements · {Object.keys(unlockedAch).length}/{ACHIEVEMENTS.length}</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:8}}>
+              {ACHIEVEMENTS.map(a => {
+                const got = !!unlockedAch[a.id];
+                return (
+                  <div key={a.id} style={{padding:"10px 12px",background:got?`${T.gd}0F`:T.sa,border:`1px solid ${got?T.gd+"55":T.bd}`,borderRadius:8,opacity:got?1:0.55}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                      <span style={{fontSize:20,filter:got?"none":"grayscale(1)"}}>{a.icon}</span>
+                      <span style={{fontSize:13,fontWeight:700,color:got?T.gd:T.tx}}>{a.name}</span>
+                    </div>
+                    <div style={{fontSize:12,color:T.t2,lineHeight:1.4}}>{a.desc}</div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -1891,12 +2130,27 @@ export default function Phase4() {
         </div>))}
       </div>
 
+      {/* Achievement toast */}
+      {newAch.length > 0 && (
+        <div style={{...S.cd,maxWidth:700,margin:"0 auto 16px",borderColor:T.gd,background:`${T.gd}10`,textAlign:"left"}}>
+          <div style={{...S.sh,color:T.gd,marginBottom:8}}>🏆 Achievement{newAch.length>1?"s":""} Unlocked</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:6}}>
+            {newAch.map(id => { const a=ACHIEVEMENTS.find(x=>x.id===id); if(!a) return null; return (
+              <div key={id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",background:T.sf,border:`1px solid ${T.gd}33`,borderRadius:6}}>
+                <span style={{fontSize:18}}>{a.icon}</span>
+                <div><div style={{fontSize:13,fontWeight:700,color:T.gd}}>{a.name}</div><div style={{fontSize:12,color:T.t2}}>{a.desc}</div></div>
+              </div>); })}
+          </div>
+        </div>
+      )}
+
       <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
         {!endlessMode && !collapsed && (
           <Btn onClick={startEndless} color="#7C3AED" style={{padding:"14px 28px"}}>
             ♾ Continue to Endless Mode
           </Btn>
         )}
+        <Btn onClick={()=>exportOnePager({metrics,cumulative,history,cty,diff,endlessMode,weeklyMode,collapsed,round,grade,questsDone,tier2Unlocked,chainCount,avg,narrative})} color={T.ac}>📄 Export One-Pager</Btn>
         <Btn onClick={restart} color={gc}>Play Again →</Btn>
       </div>
       {!endlessMode && !collapsed && (
