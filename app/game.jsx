@@ -1264,21 +1264,50 @@ export default function Phase4() {
             ))}
           </div>
           {cty && (
-            <div style={{...S.cd,marginTop:8,padding:"8px 14px",textAlign:"left",background:T.sa}}>
-              <div style={{fontSize:13,color:T.t2,fontStyle:"italic",marginBottom:4}}>{cty.flavour}</div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+            <div style={{...S.cd,marginTop:16,padding:"20px 24px",textAlign:"left",background:T.sa}}>
+              <div style={{fontSize:15,color:T.t2,fontStyle:"italic",marginBottom:20,lineHeight:1.5}}>{cty.flavour}</div>
+
+              <div style={{...S.sh,color:T.tm,marginBottom:10}}>Starting Metrics</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:8,marginBottom:20}}>
                 {METRICS.map(m => {
                   const v = cty.start[m.id];
                   const col = v>=55?T.gd:v>=40?T.wn:T.bad;
-                  return <span key={m.id} style={{...S.mn,fontSize:12,color:col}}>{m.icon}{v}</span>;
+                  const bg = v>=55?"rgba(34,197,94,0.12)":v>=40?"rgba(234,179,8,0.12)":"rgba(239,68,68,0.12)";
+                  return (
+                    <div key={m.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"8px 12px",background:bg,border:`1px solid ${col}33`,borderRadius:8}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
+                        <span style={{fontSize:16}}>{m.icon}</span>
+                        <span style={{fontSize:13,color:T.tx,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{m.label}</span>
+                      </div>
+                      <span style={{...S.mn,fontSize:15,fontWeight:700,color:col}}>{v}</span>
+                    </div>
+                  );
                 })}
               </div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>
-                {POLICIES.filter(p=>(cty.modifiers[p.id]||1)!==1).map(p=>{
-                  const mod=cty.modifiers[p.id]||1;
-                  return <span key={p.id} style={{...S.mn,fontSize:12,color:mod>1?T.gd:T.bad}}>{p.icon}{mod>1?"+":"−"}{Math.round(Math.abs(mod-1)*100)}%</span>;
-                })}
-              </div>
+
+              {POLICIES.filter(p=>(cty.modifiers[p.id]||1)!==1).length > 0 && (
+                <>
+                  <div style={{...S.sh,color:T.tm,marginBottom:10}}>National Policy Modifiers</div>
+                  <div style={{fontSize:12,color:T.tm,marginBottom:10,fontStyle:"italic"}}>How much each point you invest in a policy returns — strengths and weaknesses specific to this country.</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
+                    {POLICIES.filter(p=>(cty.modifiers[p.id]||1)!==1).map(p=>{
+                      const mod=cty.modifiers[p.id]||1;
+                      const pct=Math.round((mod-1)*100);
+                      const col=mod>1?T.gd:T.bad;
+                      const bg=mod>1?"rgba(34,197,94,0.12)":"rgba(239,68,68,0.12)";
+                      return (
+                        <div key={p.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"8px 12px",background:bg,border:`1px solid ${col}33`,borderRadius:8}}>
+                          <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
+                            <span style={{fontSize:16}}>{p.icon}</span>
+                            <span style={{fontSize:13,color:T.tx,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.label}</span>
+                          </div>
+                          <span style={{...S.mn,fontSize:14,fontWeight:700,color:col,whiteSpace:"nowrap"}}>{pct>0?"+":""}{pct}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
