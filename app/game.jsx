@@ -691,6 +691,7 @@ const S={
 };
 const catCol={LABOUR:"#C05621",INFRASTRUCTURE:"#CA8A04",SAFETY:"#DC2626",ECONOMY:"#16A34A",GOVERNANCE:"#0891B2",GEOPOLITICS:"#4F46E5",SCIENCE:"#C026D3",SUPERINTELLIGENCE:"#DC2626"};
 const grd = (min) => ({display:"grid",gridTemplateColumns:`repeat(auto-fill,minmax(${min}px,1fr))`,gap:12});
+const flexCenter = (min) => ({display:"flex",flexWrap:"wrap",justifyContent:"center",gap:12});
 
 // ── SOUND SYSTEM (Tone.js) ──
 let audioCtx = null;
@@ -1225,10 +1226,10 @@ export default function Phase4() {
         {/* PHASE 4: Difficulty selector */}
         <div className="fu" style={{animationDelay:"0.5s",maxWidth:900,margin:"0 auto 28px"}}>
           <div style={{...S.lb,marginBottom:8,color:T.ac}}>SELECT DIFFICULTY</div>
-          <div style={grd(130)}>
+          <div style={flexCenter(130)}>
             {DIFFICULTIES.map(d => (
               <button key={d.id} onClick={() => setDifficulty(d.id)} style={{
-                ...S.cd, padding:14, cursor:"pointer", textAlign:"center",
+                ...S.cd, padding:14, cursor:"pointer", textAlign:"center", width:180, flex:"0 1 180px",
                 borderColor: difficulty===d.id ? T.ac : T.bd,
                 background: difficulty===d.id ? T.ac+"08" : T.sf,
                 boxShadow: difficulty===d.id ? `0 0 0 2px ${T.ac}22` : S.cd.boxShadow,
@@ -1246,10 +1247,10 @@ export default function Phase4() {
         {/* COUNTRY SELECTOR */}
         <div className="fu" style={{animationDelay:"0.55s",maxWidth:960,margin:"0 auto 24px"}}>
           <div style={{...S.lb,marginBottom:8,color:T.ac}}>SELECT COUNTRY</div>
-          <div style={grd(110)}>
+          <div style={flexCenter(110)}>
             {COUNTRIES.map(c => (
               <button key={c.id} onClick={() => setCountry(c.id)} style={{
-                ...S.cd, padding:10, cursor:"pointer", textAlign:"center",
+                ...S.cd, padding:10, cursor:"pointer", textAlign:"center", width:160, flex:"0 1 160px",
                 borderColor: country===c.id ? T.ac : T.bd,
                 background: country===c.id ? T.ac+"08" : T.sf,
                 boxShadow: country===c.id ? `0 0 0 2px ${T.ac}22` : S.cd.boxShadow,
