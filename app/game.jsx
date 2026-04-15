@@ -682,7 +682,7 @@ const phaseCSS = `
 const T={bg:"#F8F6F1",sf:"#FFFFFF",sa:"#F2F0EB",bd:"#E2DFD8",tx:"#1A1A1A",t2:"#5C5852",tm:"#8A857C",tf:"#B5B0A7",ac:"#2563EB",gd:"#16A34A",gb:"#F0FDF4",wn:"#CA8A04",wb:"#FEFCE8",bad:"#DC2626",bb:"#FEF2F2"};
 const S={
   pg:{minHeight:"100vh",background:T.bg,color:T.tx,fontFamily:"'Outfit',sans-serif"},
-  in:{maxWidth:1100,margin:"0 auto",padding:"32px 28px"},
+  in:{width:"90%",maxWidth:1400,margin:"0 auto",padding:"36px 0"},
   cd:{background:T.sf,border:`1px solid ${T.bd}`,borderRadius:14,padding:24,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"},
   hl:{fontFamily:"'Newsreader',serif",fontWeight:800,lineHeight:1.15,color:T.tx},
   mn:{fontFamily:"'JetBrains Mono',monospace"},
@@ -1195,7 +1195,7 @@ export default function Phase4() {
       <div ref={topRef}/>
       <div style={{...S.in,paddingTop:32,textAlign:"center"}}>
         {/* Compact network viz */}
-        <div style={{position:"relative",maxWidth:680,margin:"0 auto 4px",overflow:"hidden",borderRadius:18}}>
+        <div style={{position:"relative",maxWidth:900,margin:"0 auto 4px",overflow:"hidden",borderRadius:18}}>
           <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,#F8F6F100 0%,#F8F6F1 90%)",zIndex:2,pointerEvents:"none"}}/>
           <svg viewBox="0 0 760 400" style={{width:"100%",display:"block"}}>
             <defs><pattern id="g" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0L0 0 0 40" fill="none" stroke="#E2DFD822" strokeWidth=".5"/></pattern></defs>
@@ -1217,13 +1217,13 @@ export default function Phase4() {
         <div className="fu" style={{animationDelay:"0.2s"}}>
           <div style={{...S.lb,color:T.ac,marginBottom:8,letterSpacing:"0.35em",fontSize:13}}>POLICY SIMULATION</div>
         </div>
-        <h1 className="fu" style={{...S.hl,fontSize:48,marginBottom:8,animationDelay:"0.3s"}}>The Intelligence Age</h1>
-        <p className="fu" style={{fontSize:15,color:T.t2,maxWidth:520,margin:"0 auto 24px",lineHeight:1.75,animationDelay:"0.4s"}}>
+        <h1 className="fu" style={{...S.hl,fontSize:56,marginBottom:12,animationDelay:"0.3s"}}>The Intelligence Age</h1>
+        <p className="fu" style={{fontSize:17,color:T.t2,maxWidth:700,margin:"0 auto 28px",lineHeight:1.75,animationDelay:"0.4s"}}>
           Steer a nation through 8 years of the AI transition. Your choices cascade — triggering crises, shaping factions, and determining whether superintelligence benefits everyone or concentrates power.
         </p>
 
         {/* PHASE 4: Difficulty selector */}
-        <div className="fu" style={{animationDelay:"0.5s",maxWidth:600,margin:"0 auto 24px"}}>
+        <div className="fu" style={{animationDelay:"0.5s",maxWidth:900,margin:"0 auto 28px"}}>
           <div style={{...S.lb,marginBottom:8,color:T.ac}}>SELECT DIFFICULTY</div>
           <div style={grd(130)}>
             {DIFFICULTIES.map(d => (
@@ -1234,7 +1234,7 @@ export default function Phase4() {
                 boxShadow: difficulty===d.id ? `0 0 0 2px ${T.ac}22` : S.cd.boxShadow,
                 transition:"all 0.2s",
               }}>
-                <div style={{fontSize:14,fontWeight:700,color:difficulty===d.id?T.ac:T.tx,marginBottom:2}}>{d.label}</div>
+                <div style={{fontSize:16,fontWeight:700,color:difficulty===d.id?T.ac:T.tx,marginBottom:2}}>{d.label}</div>
                 <div style={{...S.mn,fontSize:20,fontWeight:700,color:difficulty===d.id?T.ac:T.tm}}>{d.pts}</div>
                 <div style={{fontSize:12,color:T.tm}}>pts/round</div>
                 <div style={{fontSize:13,color:T.t2,marginTop:4,lineHeight:1.4}}>{d.desc}</div>
@@ -1244,7 +1244,7 @@ export default function Phase4() {
         </div>
 
         {/* COUNTRY SELECTOR */}
-        <div className="fu" style={{animationDelay:"0.55s",maxWidth:620,margin:"0 auto 20px"}}>
+        <div className="fu" style={{animationDelay:"0.55s",maxWidth:960,margin:"0 auto 24px"}}>
           <div style={{...S.lb,marginBottom:8,color:T.ac}}>SELECT COUNTRY</div>
           <div style={grd(110)}>
             {COUNTRIES.map(c => (
@@ -1255,7 +1255,7 @@ export default function Phase4() {
                 boxShadow: country===c.id ? `0 0 0 2px ${T.ac}22` : S.cd.boxShadow,
                 transition:"all 0.2s",
               }}>
-                <div style={{fontSize:24}}>{c.flag}</div>
+                <div style={{fontSize:32}}>{c.flag}</div>
                 <div style={{fontSize:13,fontWeight:700,color:country===c.id?T.ac:T.tx,marginTop:2}}>{c.label}</div>
                 <div style={{fontSize:12,color:T.tm,lineHeight:1.3,marginTop:3}}>{c.desc.split(".")[0]}.</div>
               </button>
@@ -1293,7 +1293,7 @@ export default function Phase4() {
         </div>
 
         {/* Feature pills */}
-        <div className="fu" style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:6,maxWidth:600,margin:"0 auto 24px",animationDelay:"0.7s"}}>
+        <div className="fu" style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:6,maxWidth:900,margin:"0 auto 28px",animationDelay:"0.7s"}}>
           {[{i:"🔗",l:"Event Chains"},{i:"📜",l:"History Cards"},{i:"🔓",l:"Policy Trees"},{i:"⚒",l:"Factions"},{i:"🎯",l:"Quests"},{i:"📈",l:"Sparklines"},{i:"🔒",l:"Locked Choices"}].map(f=>(
             <div key={f.l} style={{background:T.sf,border:`1px solid ${T.bd}`,borderRadius:8,padding:"4px 12px",fontSize:13,fontWeight:600,color:T.tx,display:"flex",alignItems:"center",gap:4}}>
               <span>{f.i}</span>{f.l}
@@ -1320,7 +1320,7 @@ export default function Phase4() {
           </button>
         </div>
         {showGlossary && (
-          <div style={{...S.cd,textAlign:"left",maxWidth:600,margin:"12px auto 0",maxHeight:300,overflowY:"auto"}}>
+          <div style={{...S.cd,textAlign:"left",maxWidth:900,margin:"12px auto 0",maxHeight:400,overflowY:"auto"}}>
             {Object.entries(GLOSSARY).map(([term,def]) => (
               <div key={term} style={{marginBottom:12,paddingBottom:12,borderBottom:`1px solid ${T.bd}`}}>
                 <div style={{...S.mn,fontSize:12,fontWeight:600,color:T.ac,marginBottom:2}}>{term}</div>
@@ -1341,7 +1341,7 @@ export default function Phase4() {
   if (phase === "allocate") return (
     <div style={S.pg}><style>{fonts}{phaseCSS}</style><div ref={topRef}/><div className="phase-enter" style={S.in}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-        <div><div style={{...S.lb,marginBottom:3}}>{cty?.flag||""} YEAR {year} — {endlessMode?`ENDLESS ROUND ${round-ROUNDS+1}`:` ROUND ${round+1}/${ROUNDS}`} · {diff.label.toUpperCase()}{weeklyMode?" · WEEKLY":""}</div><h2 style={{...S.hl,fontSize:26,margin:0}}>Allocate Resources</h2>{endlessMode&&<div style={{fontSize:13,color:T.bad,marginTop:2}}>⚠ Endless mode — collapse when any metric hits 0 or avg drops below 20</div>}{cty&&<div style={{fontSize:13,color:T.tm,marginTop:1}}>{cty.flavour}</div>}</div>
+        <div><div style={{...S.lb,marginBottom:3}}>{cty?.flag||""} YEAR {year} — {endlessMode?`ENDLESS ROUND ${round-ROUNDS+1}`:` ROUND ${round+1}/${ROUNDS}`} · {diff.label.toUpperCase()}{weeklyMode?" · WEEKLY":""}</div><h2 style={{...S.hl,fontSize:32,margin:0}}>Allocate Resources</h2>{endlessMode&&<div style={{fontSize:13,color:T.bad,marginTop:2}}>⚠ Endless mode — collapse when any metric hits 0 or avg drops below 20</div>}{cty&&<div style={{fontSize:13,color:T.tm,marginTop:1}}>{cty.flavour}</div>}</div>
         <div style={{textAlign:"center",background:pointsLeft===0?T.gb:T.sf,border:`1px solid ${pointsLeft===0?"#BBF7D0":T.bd}`,borderRadius:12,padding:"6px 16px"}}>
           <div style={{...S.mn,fontSize:26,fontWeight:700,color:pointsLeft===0?T.gd:T.tx}}>{pointsLeft}</div>
           <div style={{...S.lb,fontSize:8}}>{bonusPoints>0?`${basePts}+${bonusPoints}`:"PTS LEFT"}</div>
@@ -1411,12 +1411,12 @@ export default function Phase4() {
           return (
             <div key={m.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,paddingBottom:8,borderBottom:`1px solid ${T.bd}`}}>
               <Tip text={{"growth":"Overall economic output and AI productivity gains.","equality":"How evenly prosperity is distributed.","trust":"Public confidence in institutions and AI governance.","safety_score":"Containment capacity for frontier AI risks.","innovation":"R&D output, new businesses, breakthroughs. Decays without investment.","wellbeing":"Worker quality of life — security, benefits, balance.","geopolitics":"International influence and coordination capacity."}[m.id]}>
-                <div style={{width:80,flexShrink:0}}>
-                  <div style={{fontSize:12,fontWeight:600,color:T.tx,cursor:"help",borderBottom:`1px dotted ${T.bd}`}}>{m.icon} {m.label.split(" ")[0]}</div>
+                <div style={{width:110,flexShrink:0}}>
+                  <div style={{fontSize:15,fontWeight:600,color:T.tx,cursor:"help",borderBottom:`1px dotted ${T.bd}`}}>{m.icon} {m.label}</div>
                 </div>
               </Tip>
               <div style={{flex:1}}>
-                <div style={{height:6,background:T.sa,borderRadius:3,overflow:"hidden",border:`1px solid ${T.bd}`}}>
+                <div style={{height:10,background:T.sa,borderRadius:4,overflow:"hidden",border:`1px solid ${T.bd}`}}>
                   <div style={{height:"100%",width:`${v}%`,background:col,borderRadius:2,transition:"width 0.6s ease"}}/>
                 </div>
               </div>
@@ -1449,9 +1449,9 @@ export default function Phase4() {
             const sc = s>=60?T.gd:s>=40?T.wn:T.bad;
             return (
               <div key={f.id} style={{flex:"1 1 80px",background:T.sf,border:`1px solid ${sc}33`,borderRadius:10,padding:"8px 10px",textAlign:"center"}}>
-                <div style={{fontSize:16}}>{f.icon}</div>
-                <div style={{fontSize:13,fontWeight:700,color:f.color,marginBottom:2}}>{f.name}</div>
-                <div style={{height:5,background:T.sa,borderRadius:3,overflow:"hidden",marginBottom:2}}>
+                <div style={{fontSize:22}}>{f.icon}</div>
+                <div style={{fontSize:14,fontWeight:700,color:f.color,marginBottom:2}}>{f.name}</div>
+                <div style={{height:6,background:T.sa,borderRadius:3,overflow:"hidden",marginBottom:2}}>
                   <div style={{height:"100%",width:`${s}%`,background:sc,borderRadius:2,transition:"width 0.5s"}}/>
                 </div>
                 <div style={{...S.mn,fontSize:13,fontWeight:600,color:sc}}>{Math.round(s)} <span style={{fontSize:13,fontWeight:400}}>{label}</span></div>
@@ -1474,7 +1474,7 @@ export default function Phase4() {
                   <span style={{fontSize:16}}>{a.avatar}</span>
                   <div>
                     <div style={{fontSize:13,fontWeight:700,color:a.color}}>{a.name}</div>
-                    <div style={{...S.lb,fontSize:7}}>{a.philosophy}</div>
+                    <div style={{...S.lb,fontSize:11}}>{a.philosophy}</div>
                   </div>
                 </div>
                 <div style={{fontSize:13,color:T.t2,lineHeight:1.4,marginBottom:5}}>{a.getAdvice(round,metrics,cumulative)}</div>
@@ -1488,7 +1488,7 @@ export default function Phase4() {
                 )}
                 <div style={{display:"flex",alignItems:"center",gap:4}}>
                   <div style={{...S.mn,fontSize:13,color:qp>=3?T.gd:T.tm}}>Quest: {a.questLabel}</div>
-                  <div style={{display:"flex",gap:2}}>{[0,1,2].map(i=>(<div key={i} style={{width:12,height:3,borderRadius:1,background:i<qp?a.color:T.bd}}/>))}</div>
+                  <div style={{display:"flex",gap:2}}>{[0,1,2].map(i=>(<div key={i} style={{width:16,height:5,borderRadius:2,background:i<qp?a.color:T.bd}}/>))}</div>
                   {qp>=3&&<span style={{fontSize:13,color:T.gd}}>✓</span>}
                 </div>
               </div>
@@ -1518,7 +1518,7 @@ export default function Phase4() {
               <button onClick={()=>adjust(p.id,-1)} style={{...S.bt,flex:1,padding:"4px 0",background:T.sa,color:T.t2,fontSize:14,border:`1px solid ${T.bd}`}}>−</button>
               <button onClick={()=>adjust(p.id,1)} style={{...S.bt,flex:1,padding:"4px 0",background:p.color+"10",color:p.color,fontSize:14,border:`1px solid ${p.color}33`}}>+</button>
             </div>
-            <div style={{display:"flex",gap:3,justifyContent:"center",marginBottom:2}}>{[0,1,2,3,4,5].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:i<v?p.color:T.bd}}/>)}</div>
+            <div style={{display:"flex",gap:3,justifyContent:"center",marginBottom:2}}>{[0,1,2,3,4,5].map(i=><div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<v?p.color:T.bd}}/>)}</div>
             <div style={{...S.mn,fontSize:13,color:t2Done?T.gd:T.tf,textAlign:"center"}}>{t2Done?`🔓 ${p.t2.name}`:`${cv}/${p.t2.thresh} → ${p.t2.name}`}</div>
             {inSynergy && <div style={{...S.mn,fontSize:13,color:T.gd,textAlign:"center",marginTop:2}}>⚡ {policySynergies.map(s=>s.label).join(", ")}</div>}
           </div>);
@@ -1547,7 +1547,7 @@ export default function Phase4() {
         <div style={{padding:"24px 20px 16px",textAlign:"center"}}>
           <div style={{fontSize:28,marginBottom:8}}>⚡</div>
           <h2 style={{...S.hl,fontSize:22,marginBottom:8}}>Quick Decision Required</h2>
-          <p style={{fontSize:14,color:T.t2,maxWidth:500,margin:"0 auto",lineHeight:1.7}}>{microEvent.text}</p>
+          <p style={{fontSize:14,color:T.t2,maxWidth:700,margin:"0 auto",lineHeight:1.7}}>{microEvent.text}</p>
         </div>
       </div>
       <div style={{...S.lb,fontSize:12,marginBottom:8,textAlign:"center"}}>HOW DO YOU RESPOND?</div>
@@ -1622,7 +1622,7 @@ export default function Phase4() {
         </div>)}
         <div style={{padding:"24px 20px 16px",textAlign:"center"}}>
           <h2 style={{...S.hl,fontSize:30,marginBottom:6}}>{currentEvent.title}</h2>
-          <p style={{fontSize:14,color:T.t2,maxWidth:500,margin:"0 auto",fontStyle:"italic"}}>{currentEvent.subtitle}</p>
+          <p style={{fontSize:14,color:T.t2,maxWidth:700,margin:"0 auto",fontStyle:"italic"}}>{currentEvent.subtitle}</p>
         </div>
         <div style={{borderTop:`1px solid ${T.bd}`,padding:"12px 20px",background:T.sa}}>
           <button onClick={()=>setShowHist(!showHist)} style={{...S.bt,padding:0,background:"transparent",color:T.tm,fontSize:13}}>
@@ -1774,7 +1774,7 @@ export default function Phase4() {
           <div style={{fontSize:13,color:T.t2}}>You survived {round - ROUNDS} rounds past the Threshold before systems buckled. The Intelligence Age demanded more than humanity could sustain.</div>
         </div>
       )}
-      <div style={{background:`linear-gradient(135deg, ${gc}08, ${gc}15)`,border:`2px solid ${gc}33`,borderRadius:20,padding:"28px 24px 20px",marginBottom:20,maxWidth:520,marginLeft:"auto",marginRight:"auto"}}>
+      <div style={{background:`linear-gradient(135deg, ${gc}08, ${gc}15)`,border:`2px solid ${gc}33`,borderRadius:20,padding:"28px 24px 20px",marginBottom:20,maxWidth:700,marginLeft:"auto",marginRight:"auto"}}>
         <div style={{...S.lb,color:gc,marginBottom:6,letterSpacing:"0.35em"}}>{cty?.flag||""} THE INTELLIGENCE AGE · {cty?.label?.toUpperCase()||""} · {diff.label.toUpperCase()}{endlessMode?" · ENDLESS":""}{weeklyMode?" · WEEKLY":""}</div>
         <div style={{fontFamily:"'Newsreader',serif",fontSize:80,fontWeight:900,color:gc,lineHeight:1}}>{collapsed?(round-ROUNDS):grade.grade}</div>
         <h2 style={{...S.hl,fontSize:24,marginBottom:4}}>{collapsed?`Survived ${round-ROUNDS} Rounds`:grade.title}</h2>
@@ -1837,7 +1837,7 @@ export default function Phase4() {
         <Btn onClick={restart} color={gc}>Play Again →</Btn>
       </div>
       {!endlessMode && !collapsed && (
-        <div style={{...S.mn,fontSize:13,color:T.tm,marginTop:8,maxWidth:400,marginLeft:"auto",marginRight:"auto"}}>
+        <div style={{...S.mn,fontSize:13,color:T.tm,marginTop:8,maxWidth:600,marginLeft:"auto",marginRight:"auto"}}>
           Endless mode continues past the Threshold with escalating difficulty. Points decrease, feedback intensifies. Game ends when any metric hits 0 or average drops below 20. How long can you sustain the Intelligence Age?
         </div>
       )}
