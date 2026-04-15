@@ -30,6 +30,22 @@ function getWeekLabel(seed) {
   return `Week ${w}, ${y}`;
 }
 
+// ── WEEKLY TWISTS — seeded, shared by everyone that week ──
+const WEEKLY_TWISTS = [
+  {id:"safety_crisis",icon:"🚨",name:"Safety Crisis Week",desc:"A high-profile AI incident broke before you took office.",startMod:{safety_score:-18,trust:-8}},
+  {id:"budget_crunch",icon:"💸",name:"Budget Crunch",desc:"Treasury is stretched thin. Every round you have one fewer point to spend.",pointsMod:-1},
+  {id:"populist_surge",icon:"📣",name:"Populist Surge",desc:"Factions start angry. Labour and Civil Society at 30% satisfaction.",factionStart:{labour:30,civil:30}},
+  {id:"tech_boom",icon:"🚀",name:"Tech Boom",desc:"Private AI investment is booming. +1 innovation each round — but Tech lobby expects deference.",passive:{innovation:1},factionStart:{tech:65}},
+  {id:"fractured_alliance",icon:"🌐",name:"Fractured Alliance",desc:"Allies are distrustful after a controversial trade deal. Geopolitics starts 15 lower.",startMod:{geopolitics:-15}},
+  {id:"inequality_shock",icon:"⚖️",name:"Inequality Shock",desc:"Wealth concentration hit record highs. Equality and wellbeing start 12 lower.",startMod:{equality:-12,wellbeing:-12}},
+  {id:"brain_drain",icon:"🧠",name:"Brain Drain",desc:"Top AI talent is leaving for rival nations. Innovation starts 15 lower.",startMod:{innovation:-15}},
+  {id:"hostile_press",icon:"📰",name:"Hostile Press",desc:"Media is actively adversarial. Trust starts 15 lower and decays an extra 1/round.",startMod:{trust:-15},passive:{trust:-1}},
+];
+function getWeeklyTwist(seed){
+  if(!seed) return null;
+  return WEEKLY_TWISTS[seed % WEEKLY_TWISTS.length];
+}
+
 // ── COUNTRIES ──
 const COUNTRIES = [
   {id:"us",label:"United States",flag:"🇺🇸",desc:"Tech superpower. High innovation, low equality. Polarised politics make trust fragile.",
@@ -1289,11 +1305,13 @@ export default function Phase4() {
     const synB = {}; activeSynergies.forEach(s => Object.entries(s.bonus).forEach(([k,v]) => { synB[k]=(synB[k]||0)+v; }));
     const t2B = {}; tier2Unlocked.forEach(t => Object.entries(t.passive).forEach(([k,v]) => { t2B[k]=(t2B[k]||0)+v; }));
     const qB = {}; ADVISORS.forEach(a => { if(questProgress[a.id]>=3){qB.trust=(qB.trust||0)+1;}});
+    const twist = weeklyMode ? getWeeklyTwist(getWeeklySeed()) : null;
+    const tB = {}; if (twist?.passive) Object.entries(twist.passive).forEach(([k,v])=>{ tB[k]=(tB[k]||0)+v; });
 
     setPrevMetrics(preMicroMetrics || {...metrics});
     const nm = {};
     METRICS.forEach(m => {
-      const raw = (res[m.id]||0) + (synB[m.id]||0) + (t2B[m.id]||0) + (qB[m.id]||0);
+      const raw = (res[m.id]||0) + (synB[m.id]||0) + (t2B[m.id]||0) + (qB[m.id]||0) + (tB[m.id]||0);
       nm[m.id] = clamp((metrics[m.id]||50) + applyTrust(raw, tm));
     });
     const endlessBoost = endlessMode ? 0.15 * (round - ROUNDS + 1) : 0;
@@ -1336,7 +1354,9 @@ export default function Phase4() {
     const newRd = round + 1;
     // Endless mode: escalating difficulty
     const endlessPenalty = isEndless && newRd >= ROUNDS ? Math.floor((newRd - ROUNDS) / 2) : 0;
-    const effectivePts = Math.max(3, basePts + bonusPoints - endlessPenalty);
+    const twist = weeklyMode ? getWeeklyTwist(getWeeklySeed()) : null;
+    const twistPts = twist?.pointsMod||0;
+    const effectivePts = Math.max(2, basePts + bonusPoints - endlessPenalty + twistPts);
     setRound(newRd); setAlloc(emptyAlloc()); setPointsLeft(effectivePts);
     setCurrentEvent(null); setResult(null); setChoiceIdx(null); setMicroEvent(null); setMicroChoiceIdx(null); setMicroResult(null); setPreMicroMetrics(null);
     setShowFactions(false); setShowHist(false); setFactionMsg([]); setNewUnlocks([]);
@@ -1507,7 +1527,13 @@ export default function Phase4() {
           }}>
             {weeklyMode ? `📅 Weekly Challenge: ${getWeekLabel(getWeeklySeed())} ✓` : "📅 Enable Weekly Challenge"}
           </button>
-          {weeklyMode && <div style={{...S.mn,fontSize:13,color:"#7C3AED",marginTop:4}}>Same events for everyone this week. Compare strategies.</div>}
+          {weeklyMode && (() => { const tw=getWeeklyTwist(getWeeklySeed()); return (
+            <div style={{marginTop:8,padding:"10px 14px",background:"#F5F3FF",border:"1px solid #A78BFA",borderRadius:10,maxWidth:640,marginLeft:"auto",marginRight:"auto"}}>
+              <div style={{fontSize:12,color:"#7C3AED",...S.mn,letterSpacing:"0.2em",marginBottom:4}}>THIS WEEK'S TWIST</div>
+              <div style={{fontSize:15,fontWeight:700,color:"#4C1D95",marginBottom:2}}>{tw.icon} {tw.name}</div>
+              <div style={{fontSize:13,color:T.t2,lineHeight:1.5}}>{tw.desc}</div>
+              <div style={{fontSize:12,color:T.tm,marginTop:6,fontStyle:"italic"}}>Same events and same twist for every player this week.</div>
+            </div>); })()}
         </div>
 
         {/* Feature pills */}
@@ -1522,8 +1548,13 @@ export default function Phase4() {
         <div className="fu" style={{animationDelay:"0.9s"}}>
           <Btn disabled={!difficulty||!country} onClick={() => {
             const sm = cty ? {...cty.start} : {...INIT};
+            const twist = weeklyMode ? getWeeklyTwist(getWeeklySeed()) : null;
+            if (twist?.startMod) Object.entries(twist.startMod).forEach(([k,v])=>{ sm[k]=clamp((sm[k]||50)+v,0,100); });
             setMetrics(sm); setPrevMetrics(sm); setMetricHistory([sm]);
-            setAlloc(emptyAlloc()); setPointsLeft(diff.pts);
+            setAlloc(emptyAlloc());
+            const startPts = diff.pts + (twist?.pointsMod||0);
+            setPointsLeft(Math.max(2, startPts));
+            if (twist?.factionStart) setFactionSat({...twist.factionStart});
             if (weeklyMode) { rngRef.current = mulberry32(getWeeklySeed()); }
             setPhase("allocate");
           }} style={{padding:"16px 40px",fontSize:16}}>
@@ -1686,6 +1717,12 @@ export default function Phase4() {
           <div style={{...S.lb,fontSize:11}}>{bonusPoints>0?`${basePts}+${bonusPoints}`:"PTS LEFT"}</div>
         </div>
       </div>
+      {weeklyMode && (() => { const tw=getWeeklyTwist(getWeeklySeed()); return tw ? (
+        <div style={{padding:"8px 14px",marginBottom:12,background:"#F5F3FF",border:"1px solid #A78BFA",borderRadius:10,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+          <span style={{fontSize:20}}>{tw.icon}</span>
+          <span style={{fontSize:13,fontWeight:700,color:"#4C1D95"}}>{tw.name}</span>
+          <span style={{fontSize:12,color:T.t2,flex:"1 1 200px"}}>{tw.desc}</span>
+        </div>) : null; })()}
       <Timeline round={round}/>
 
       {/* ALERTS ROW — side by side */}
