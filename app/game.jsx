@@ -56,10 +56,10 @@ const COUNTRIES = [
 
 // ── DIFFICULTY ──
 const DIFFICULTIES = [
-  {id:"easy",label:"Accessible",pts:12,microChance:0.2,feedbackMult:0.6,desc:"More breathing room. Learn the systems."},
-  {id:"normal",label:"Standard",pts:9,microChance:0.35,feedbackMult:1.2,desc:"Tight resources. Real trade-offs required."},
-  {id:"hard",label:"Hard",pts:7,microChance:0.4,feedbackMult:1.8,desc:"Every point matters. Consequences bite."},
-  {id:"crisis",label:"Crisis Mode",pts:5,microChance:0.55,feedbackMult:2.5,desc:"Brutal. You will fail somewhere — choose where."},
+  {id:"easy",label:"Accessible",pts:9,microChance:0.2,feedbackMult:0.8,desc:"More breathing room. Learn the systems."},
+  {id:"normal",label:"Standard",pts:7,microChance:0.4,feedbackMult:1.4,desc:"Tight resources. Real trade-offs required."},
+  {id:"hard",label:"Hard",pts:5,microChance:0.5,feedbackMult:2.0,desc:"Every point matters. Consequences bite."},
+  {id:"crisis",label:"Crisis Mode",pts:4,microChance:0.65,feedbackMult:2.8,desc:"Brutal. You will fail somewhere — choose where."},
 ];
 
 // ── GLOSSARY — terms people might not know ──
@@ -1709,21 +1709,31 @@ export default function Phase4() {
         {/* LEFT COLUMN — Budget & Policies */}
         <div style={{flex:"1 1 58%",minWidth:0}}>
           {/* Faction Demand — important, goes at top */}
-          {factionDemand && (
+          {factionDemand && (() => {
+            const fSat = Math.round(factionSat[factionDemand.faction.id] ?? 50);
+            const mood = fSat>=80?{l:"Supportive",c:T.gd}:fSat>=60?{l:"Content",c:T.gd}:fSat>=40?{l:"Neutral",c:T.wn}:fSat>=25?{l:"Opposed",c:T.bad}:{l:"Hostile",c:T.bad};
+            return (
             <div style={{...S.cd,padding:"14px 16px",marginBottom:14,borderColor:factionDemand.faction.color+"55",background:factionDemand.faction.color+"08"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:8}}>
                 <div style={{...S.lb,fontSize:12,color:factionDemand.faction.color}}>{factionDemand.faction.icon} FACTION DEMAND</div>
-                <span style={{...S.mn,fontSize:13,color:T.tm}}>{factionDemand.faction.name}</span>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{...S.mn,fontSize:13,color:T.tm}}>{factionDemand.faction.name}</span>
+                  <span style={{...S.mn,fontSize:11,color:T.tm}}>·</span>
+                  <span style={{...S.mn,fontSize:12,color:mood.c,fontWeight:700}}>{fSat}% {mood.l}</span>
+                </div>
+              </div>
+              <div style={{height:4,background:T.bd,borderRadius:2,marginBottom:8,overflow:"hidden"}}>
+                <div style={{height:"100%",width:`${fSat}%`,background:mood.c,transition:"width 0.4s"}}/>
               </div>
               <div style={{fontSize:14,color:T.tx,fontWeight:600,marginBottom:4}}>
                 Invest {factionDemand.amount}+ in {POLICIES.find(p=>p.id===factionDemand.policy)?.icon} {POLICIES.find(p=>p.id===factionDemand.policy)?.label} this round
               </div>
-              <div style={{display:"flex",gap:12,fontSize:13}}>
+              <div style={{display:"flex",gap:12,fontSize:13,flexWrap:"wrap"}}>
                 <span style={{color:T.gd}}>✓ {factionDemand.rewardMsg.split(".")[0]}</span>
                 <span style={{color:T.bad}}>✗ {factionDemand.penaltyMsg.split(".")[0]}</span>
               </div>
-            </div>
-          )}
+            </div>);
+          })()}
 
           {/* Advisor Missions */}
           {advisorMissions.length > 0 && (
