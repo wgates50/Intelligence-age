@@ -1906,21 +1906,24 @@ export default function Phase4() {
           <p style={{fontSize:14,color:T.t2,maxWidth:700,margin:"0 auto",lineHeight:1.7}}>{microEvent.text}</p>
         </div>
       </div>
-      <div style={{...S.lb,fontSize:12,marginBottom:8,textAlign:"center"}}>HOW DO YOU RESPOND?</div>
-      <div style={grd(240)}>
+      <div style={{textAlign:"center",marginBottom:12}}>
+        <div style={{...S.lb,fontSize:12,color:T.tm,marginBottom:2}}>HOW DO YOU RESPOND?</div>
+        <div style={{height:2,width:40,background:T.wn,margin:"0 auto",borderRadius:2}}/>
+      </div>
+      <div style={grd(260)}>
         {[microEvent.a, microEvent.b].map((opt, i) => (
           <button key={i} onClick={() => setMicroChoiceIdx(i)} style={{
-            ...S.cd, padding:16, cursor:"pointer", textAlign:"left",
+            ...S.cd, padding:"20px 18px", cursor:"pointer", textAlign:"center",
             borderColor: microChoiceIdx === i ? T.wn : T.bd,
             background: microChoiceIdx === i ? T.wb : T.sf,
             boxShadow: microChoiceIdx === i ? `0 0 0 2px ${T.wn}33` : S.cd.boxShadow,
-            transition: "all 0.2s", marginBottom: 0,
+            transition: "all 0.2s", marginBottom: 0, display:"flex", flexDirection:"column", alignItems:"center",
           }}>
-            <div style={{fontSize:22,marginBottom:6}}>{opt.icon}</div>
-            <div style={{fontSize:14,fontWeight:700,color:T.tx,marginBottom:4}}>{opt.label}</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+            <div style={{fontSize:30,marginBottom:10,lineHeight:1}}>{opt.icon}</div>
+            <div style={{fontSize:15,fontWeight:700,color:T.tx,marginBottom:8,lineHeight:1.3}}>{opt.label}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center"}}>
               {Object.entries(opt.fx).map(([k,v]) => (
-                <span key={k} style={{...S.mn,fontSize:13,color:v>0?T.gd:T.bad}}>
+                <span key={k} style={{...S.mn,fontSize:12,color:v>0?T.gd:T.bad,fontWeight:600}}>
                   {v>0?"+":""}{v} {METRICS.find(m=>m.id===k)?.label?.slice(0,6)||k}
                 </span>
               ))}
@@ -1940,32 +1943,32 @@ export default function Phase4() {
     const isChain = !!currentEvent.chainStep;
     return (<div style={S.pg}><style>{fonts}{phaseCSS}</style><div ref={topRef}/><div className="phase-enter" style={{...S.in,paddingTop:32}}>
       <Timeline round={round}/>
-      {/* Show resolved micro result if there was one */}
-      {microResult&&(<div style={{...S.cd,padding:"10px 14px",marginBottom:12,borderColor:"#FDE68A",background:T.wb}}>
-        <div style={{...S.lb,fontSize:13,color:T.wn,marginBottom:3}}>⚡ INTERIM DECISION: {microResult.label}</div>
-        <div style={{fontSize:12,color:T.t2}}>{microResult.msg}</div>
-        <div style={{display:"flex",gap:6,marginTop:4}}>{Object.entries(microResult.fx).map(([k,v])=>(<span key={k} style={{...S.mn,fontSize:13,color:v>0?T.gd:T.bad}}>{v>0?"+":""}{v} {METRICS.find(m=>m.id===k)?.label?.slice(0,6)||k}</span>))}</div>
-      </div>)}
-      {/* Tier-2 unlock alert on event screen */}
-      {newUnlocks.length > 0 && (
-        <div style={{...S.cd,padding:"10px 14px",marginBottom:12,borderColor:"#A78BFA",background:"#F5F3FF"}}>
-          <div style={{...S.lb,fontSize:13,color:"#7C3AED",marginBottom:3}}>🔓 TIER-2 UNLOCKED THIS ROUND</div>
-          {newUnlocks.map(u => (
-            <div key={u.t2.name} style={{fontSize:12,color:T.t2,marginBottom:2}}>
-              {u.policy.icon} <strong style={{color:"#7C3AED"}}>{u.t2.name}</strong> — {Object.entries(u.t2.passive).map(([k,v])=>`+${v} ${METRICS.find(m=>m.id===k)?.label||k}`).join(", ")} per round
+      {/* Compact pre-event status strip — one row, horizontally scrolls on mobile */}
+      {(microResult || newUnlocks.length > 0 || demandResult || (missionResults.length > 0 && missionResults.some(r=>r.met))) && (
+        <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14,justifyContent:"center"}}>
+          {microResult && (
+            <div style={{...S.mn,fontSize:12,padding:"6px 12px",background:T.wb,border:"1px solid #FDE68A",borderRadius:20,color:T.wn,display:"inline-flex",alignItems:"center",gap:6}}>
+              ⚡ {microResult.label}
+              <span style={{color:T.t2}}>·</span>
+              {Object.entries(microResult.fx).map(([k,v])=>(<span key={k} style={{color:v>0?T.gd:T.bad,fontWeight:600}}>{v>0?"+":""}{v} {METRICS.find(m=>m.id===k)?.label?.slice(0,5)||k}</span>))}
+            </div>
+          )}
+          {newUnlocks.length > 0 && newUnlocks.map(u => (
+            <div key={u.t2.name} style={{...S.mn,fontSize:12,padding:"6px 12px",background:"#F5F3FF",border:"1px solid #A78BFA",borderRadius:20,color:"#7C3AED",display:"inline-flex",alignItems:"center",gap:6}}>
+              🔓 {u.policy.icon} {u.t2.name}
             </div>
           ))}
-        </div>
-      )}
-      {/* Demand + mission results on event screen */}
-      {demandResult && (
-        <div style={{...S.cd,padding:"8px 14px",marginBottom:10,borderColor:demandResult.met?"#BBF7D0":"#FECACA",background:demandResult.met?T.gb:T.bb}}>
-          <div style={{fontSize:13,color:demandResult.met?T.gd:T.bad}}>{demandResult.met?"✓":"✗"} {demandResult.msg}</div>
-        </div>
-      )}
-      {missionResults.length > 0 && missionResults.some(r=>r.met) && (
-        <div style={{...S.cd,padding:"8px 14px",marginBottom:10,borderColor:"#C7D2FE",background:"#EFF4FF"}}>
-          <div style={{fontSize:13,color:T.ac}}>🎯 Missions: {missionResults.filter(r=>r.met).map(r=>`${r.advisor.avatar} ✓`).join(" ")} {missionResults.filter(r=>!r.met).map(r=>`${r.advisor.avatar} ✗`).join(" ")}</div>
+          {demandResult && (
+            <div style={{...S.mn,fontSize:12,padding:"6px 12px",background:demandResult.met?T.gb:T.bb,border:`1px solid ${demandResult.met?"#BBF7D0":"#FECACA"}`,borderRadius:20,color:demandResult.met?T.gd:T.bad,display:"inline-flex",alignItems:"center",gap:6}}>
+              {demandResult.met?"✓":"✗"} Faction demand {demandResult.met?"met":"ignored"}
+            </div>
+          )}
+          {missionResults.length > 0 && missionResults.some(r=>r.met) && (
+            <div style={{...S.mn,fontSize:12,padding:"6px 12px",background:"#EFF4FF",border:"1px solid #C7D2FE",borderRadius:20,color:T.ac,display:"inline-flex",alignItems:"center",gap:6}}>
+              🎯 {missionResults.filter(r=>r.met).map(r=>r.advisor.avatar).join(" ")} complete
+              {missionResults.some(r=>!r.met) && <span style={{color:T.bad,marginLeft:4}}>· {missionResults.filter(r=>!r.met).map(r=>r.advisor.avatar).join(" ")} missed</span>}
+            </div>
+          )}
         </div>
       )}
       <div style={{...S.cd,padding:0,marginBottom:16,overflow:"hidden"}}>
@@ -1987,35 +1990,35 @@ export default function Phase4() {
           {showHist&&currentEvent.hist&&(<div style={{marginTop:8}}><div style={{...S.mn,fontSize:12,color:evCol,marginBottom:3}}>{currentEvent.hist.era}</div><div style={{fontSize:12,color:T.t2,lineHeight:1.6}}>{currentEvent.hist.text}</div></div>)}
         </div>
       </div>
-      <div style={{...S.cd,padding:"8px 12px",marginBottom:14}}>
-        <div style={{...S.lb,fontSize:13,marginBottom:5}}>YOUR BUDGET</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-          {POLICIES.filter(p=>(alloc[p.id]||0)>0).map(p=><span key={p.id} style={{...S.mn,fontSize:13,background:p.color+"10",border:`1px solid ${p.color}33`,borderRadius:6,padding:"2px 7px",color:p.color}}>{p.icon}{p.short}:{alloc[p.id]}</span>)}
-        </div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",flexWrap:"wrap",gap:6,marginBottom:14,padding:"6px 8px"}}>
+        <span style={{...S.lb,fontSize:11,color:T.tm,marginRight:4}}>BUDGET</span>
+        {POLICIES.filter(p=>(alloc[p.id]||0)>0).map(p=><span key={p.id} style={{...S.mn,fontSize:12,background:p.color+"10",border:`1px solid ${p.color}33`,borderRadius:6,padding:"2px 8px",color:p.color}}>{p.icon} {p.short}:{alloc[p.id]}</span>)}
       </div>
-      <div style={{...S.lb,fontSize:12,marginBottom:8,textAlign:"center"}}>CHOOSE YOUR RESPONSE</div>
-      <div style={grd(240)}>
+      <div style={{textAlign:"center",marginBottom:12}}>
+        <div style={{...S.lb,fontSize:12,color:T.tm,marginBottom:2}}>CHOOSE YOUR RESPONSE</div>
+        <div style={{height:2,width:40,background:evCol,margin:"0 auto",borderRadius:2}}/>
+      </div>
+      <div style={grd(260)}>
         {currentEvent.choices.map((c,i) => {
           const available = isChoiceAvailable(c);
           const isSelected = choiceIdx === i;
           return (<button key={i} onClick={() => available && setChoiceIdx(i)} style={{
-            ...S.cd,padding:18,cursor:available?"pointer":"not-allowed",textAlign:"left",
+            ...S.cd,padding:"20px 18px",cursor:available?"pointer":"not-allowed",textAlign:"center",
             borderColor:isSelected?evCol:!available?"#FECACA":T.bd,
             background:isSelected?evCol+"08":!available?"#FEF2F210":T.sf,
             opacity:available?1:0.7,boxShadow:isSelected?`0 0 0 2px ${evCol}22`:S.cd.boxShadow,
-            transition:"all 0.2s",marginBottom:0,
+            transition:"all 0.2s",marginBottom:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",
           }}>
-            <div style={{fontSize:24,marginBottom:6}}>{c.icon}</div>
-            <div style={{fontSize:14,fontWeight:700,color:available?T.tx:T.tm,marginBottom:3}}>{c.label}</div>
-            <div style={{fontSize:12,color:T.t2,lineHeight:1.5}}>{c.desc}</div>
-            {/* PHASE 4: locked choice explanation */}
+            <div style={{fontSize:30,marginBottom:10,lineHeight:1}}>{c.icon}</div>
+            <div style={{fontSize:15,fontWeight:700,color:available?T.tx:T.tm,marginBottom:6,lineHeight:1.3}}>{c.label}</div>
+            <div style={{fontSize:13,color:T.t2,lineHeight:1.55,maxWidth:280}}>{c.desc}</div>
             {!available && c.requires && (
-              <div style={{...S.mn,fontSize:13,color:T.bad,marginTop:8,padding:"6px 8px",background:T.bb,borderRadius:6,border:"1px solid #FECACA"}}>
+              <div style={{...S.mn,fontSize:12,color:T.bad,marginTop:10,padding:"6px 10px",background:T.bb,borderRadius:6,border:"1px solid #FECACA",display:"inline-flex",alignItems:"center",gap:4}}>
                 🔒 {c.requires.lockedMsg}
                 <InfoButton term={c.requires.policy==="safety"?"ASL-4":c.requires.policy==="governance"?"CAISI":""}/>
               </div>
             )}
-            {c.chainTrigger&&available&&<div style={{...S.mn,fontSize:12,color:T.wn,marginTop:6}}>⏳ This choice will have consequences</div>}
+            {c.chainTrigger&&available&&<div style={{...S.mn,fontSize:11,color:T.wn,marginTop:8,letterSpacing:"0.05em",textTransform:"uppercase"}}>⏳ Has consequences</div>}
           </button>);
         })}
       </div>
