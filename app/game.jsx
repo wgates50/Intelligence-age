@@ -110,23 +110,24 @@ const SYNERGIES = [
 const getSyn = a => SYNERGIES.filter(s => s.ids.every((id,i) => (a[id]||0) >= s.thresh[i]));
 
 // ── FACTIONS with consequence thresholds ──
+// Faction deltas: preferred policies yield smaller gains, opposed cost more, and satisfaction decays toward 50 each round.
 const FACTIONS = [
   {id:"tech",name:"Tech Industry",icon:"🏢",color:"#2563EB",
-    calc:a=>((a.grid||0)+(a.science||0)+(a.access||0))*8-((a.tax||0)+(a.safety||0))*5,
-    lowPenalty:{innovation:-3,growth:-2},lowMsg:"Tech lobby blocks AI infrastructure spending.",
-    highBonus:{innovation:2,growth:1},highMsg:"Tech investment surges — industry backs your agenda."},
+    calc:a=>((a.grid||0)+(a.science||0)+(a.access||0))*4-((a.tax||0)+(a.safety||0))*6,
+    lowPenalty:{innovation:-4,growth:-3},lowMsg:"Tech lobby blocks AI infrastructure spending.",
+    highBonus:{innovation:1,growth:1},highMsg:"Tech investment surges — industry backs your agenda."},
   {id:"labour",name:"Labour",icon:"⚒",color:"#C05621",
-    calc:a=>((a.workers||0)+(a.nets||0)+(a.wealth||0))*8-(a.grid||0)*2,
-    lowPenalty:{wellbeing:-3,trust:-2},lowMsg:"Wildcat strikes disrupt key sectors.",
-    highBonus:{wellbeing:2,equality:1},highMsg:"Union cooperation accelerates workforce transitions."},
+    calc:a=>((a.workers||0)+(a.nets||0)+(a.wealth||0))*4-((a.grid||0)+(a.science||0))*3,
+    lowPenalty:{wellbeing:-4,trust:-3},lowMsg:"Wildcat strikes disrupt key sectors.",
+    highBonus:{wellbeing:1,equality:1},highMsg:"Union cooperation accelerates workforce transitions."},
   {id:"security",name:"Security",icon:"🛡",color:"#DC2626",
-    calc:a=>((a.safety||0)+(a.governance||0)+(a.intl||0))*8-(a.access||0)*3,
-    lowPenalty:{safety_score:-3,geopolitics:-2},lowMsg:"Intelligence agencies withhold critical AI threat data.",
-    highBonus:{safety_score:2,trust:1},highMsg:"Security establishment shares threat intelligence proactively."},
+    calc:a=>((a.safety||0)+(a.governance||0)+(a.intl||0))*4-((a.access||0)+(a.workers||0))*4,
+    lowPenalty:{safety_score:-4,geopolitics:-3},lowMsg:"Intelligence agencies withhold critical AI threat data.",
+    highBonus:{safety_score:1,trust:1},highMsg:"Security establishment shares threat intelligence proactively."},
   {id:"civil",name:"Civil Society",icon:"🏛",color:"#16A34A",
-    calc:a=>((a.wealth||0)+(a.access||0)+(a.governance||0)+(a.nets||0))*5-(a.grid||0)*3,
-    lowPenalty:{trust:-3,equality:-2},lowMsg:"NGO campaigns erode public confidence in your agenda.",
-    highBonus:{trust:2,equality:1},highMsg:"Civil society mobilises in support of your policies."},
+    calc:a=>((a.wealth||0)+(a.access||0)+(a.governance||0)+(a.nets||0))*3-((a.grid||0)+(a.intl||0))*4,
+    lowPenalty:{trust:-4,equality:-3},lowMsg:"NGO campaigns erode public confidence in your agenda.",
+    highBonus:{trust:1,equality:1},highMsg:"Civil society mobilises in support of your policies."},
 ];
 
 const ADVISORS = [
@@ -1170,10 +1171,13 @@ export default function Phase4() {
     // PHASE 4: faction consequences with messages
     const nfs = {}, msgs = [];
     FACTIONS.forEach(f => {
-      const newSat = clamp((factionSat[f.id]||50) + f.calc(alloc), 0, 100);
+      const prev = factionSat[f.id]||50;
+      // Mean-reverting decay: drift 20% toward 50 each round, then apply allocation delta
+      const decayed = prev + (50 - prev) * 0.2;
+      const newSat = clamp(decayed + f.calc(alloc), 0, 100);
       nfs[f.id] = newSat;
       if (newSat < 30) msgs.push({faction:f.name,icon:f.icon,color:f.color,type:"penalty",msg:f.lowMsg,fx:f.lowPenalty});
-      else if (newSat > 80) msgs.push({faction:f.name,icon:f.icon,color:f.color,type:"bonus",msg:f.highMsg,fx:f.highBonus});
+      else if (newSat >= 85) msgs.push({faction:f.name,icon:f.icon,color:f.color,type:"bonus",msg:f.highMsg,fx:f.highBonus});
     });
     setFactionSat(nfs);
     setFactionMsg(msgs);
@@ -1284,7 +1288,7 @@ export default function Phase4() {
     const tm = getTrustMult(metrics.trust);
     const synB = {}; activeSynergies.forEach(s => Object.entries(s.bonus).forEach(([k,v]) => { synB[k]=(synB[k]||0)+v; }));
     const t2B = {}; tier2Unlocked.forEach(t => Object.entries(t.passive).forEach(([k,v]) => { t2B[k]=(t2B[k]||0)+v; }));
-    const qB = {}; ADVISORS.forEach(a => { if(questProgress[a.id]>=3){qB.trust=(qB.trust||0)+2;qB.innovation=(qB.innovation||0)+1;}});
+    const qB = {}; ADVISORS.forEach(a => { if(questProgress[a.id]>=3){qB.trust=(qB.trust||0)+1;}});
 
     setPrevMetrics(preMicroMetrics || {...metrics});
     const nm = {};
@@ -1872,7 +1876,7 @@ export default function Phase4() {
                     <div style={{display:"flex",alignItems:"center",gap:4}}>
                       <div style={{...S.mn,fontSize:12,color:qp>=3?T.gd:T.tm}}>Quest: {a.questLabel}</div>
                       <div style={{display:"flex",gap:2}}>{[0,1,2].map(i=>(<div key={i} style={{width:16,height:5,borderRadius:2,background:i<qp?a.color:T.bd}}/>))}</div>
-                      {qp>=3&&<span style={{fontSize:12,color:T.gd}}>✓</span>}
+                      {qp>=3?<span style={{fontSize:11,color:T.gd,fontWeight:600}}>✓ +1 trust/rd</span>:<span style={{fontSize:11,color:T.tm}}>→ +1 trust/rd</span>}
                     </div>
                   </div>
                 );
@@ -2108,7 +2112,7 @@ export default function Phase4() {
             <div style={S.sh}>⚡ Active Bonuses</div>
             {activeSynergies.map(s=><div key={s.label} style={{...S.mn,fontSize:13,color:"#15803D",marginBottom:3}}>⚡ {s.label}: {Object.entries(s.bonus).map(([k,v])=>`+${v} ${k}`).join(", ")}</div>)}
             {tier2Unlocked.map(t=><div key={t.name} style={{...S.mn,fontSize:13,color:"#15803D",marginBottom:3}}>🔓 {t.name}</div>)}
-            {ADVISORS.filter(a=>questProgress[a.id]>=3).map(a=><div key={a.id} style={{...S.mn,fontSize:13,color:"#15803D"}}>🎯 {a.questLabel}: +2 trust, +1 innovation</div>)}
+            {ADVISORS.filter(a=>questProgress[a.id]>=3).map(a=><div key={a.id} style={{...S.mn,fontSize:13,color:"#15803D"}}>🎯 {a.questLabel} complete — +1 trust per round (permanent)</div>)}
           </div>)}
           {bonusPoints>0&&(<div style={{...S.cd,padding:"12px 14px",borderColor:"#C7D2FE",background:"#EFF4FF",textAlign:"center"}}>
             <span style={{fontSize:14,color:T.ac,fontWeight:600}}>📈 +{bonusPoints} bonus points next year</span>
