@@ -631,32 +631,36 @@ function pickWeightedEvent(pool, round, rFn) {
 function diminish(alloc) {
   const effective = {};
   Object.entries(alloc).forEach(([k, v]) => {
-    if (v <= 3) effective[k] = v;
-    else effective[k] = 3 + (v - 3) * 0.6; // 4→3.6, 5→4.2, 6→4.8
+    if (v <= 2) effective[k] = v;
+    else effective[k] = 2 + (v - 2) * 0.45; // 3→2.45, 4→2.9, 5→3.35, 6→3.8
   });
   return effective;
 }
 
 // ── GAME LOGIC ──
-function getTrustMult(t) { return t >= 65 ? 1.2 : t <= 35 ? 0.8 : 1; }
+function getTrustMult(t) { return t >= 65 ? 1.3 : t >= 55 ? 1.1 : t <= 25 ? 0.6 : t <= 40 ? 0.8 : 1; }
 function applyTrust(raw, tm) { return raw > 0 ? Math.round(raw * tm) : raw < 0 ? Math.round(raw * (2 - tm)) : 0; }
 function applyFeedback(m, r, mult) {
   const n = {...m};
   const d = (v) => Math.round(v * mult);
-  // Innovation decays without reinvestment
-  if (r > 0) n.innovation = clamp(n.innovation - d(2));
-  // Low equality drags trust
-  if (n.equality < 35) n.trust = clamp(n.trust - d(3));
-  // High growth + low equality → inequality accelerates
-  if (n.growth > 65 && n.equality < 45) n.equality = clamp(n.equality - d(2));
-  // Low safety compounds risk to trust
-  if (n.safety_score < 35) n.trust = clamp(n.trust - d(2));
-  // Low innovation drags growth
-  if (n.innovation < 35) n.growth = clamp(n.growth - d(1));
-  // Low wellbeing erodes equality
-  if (n.wellbeing < 30) n.equality = clamp(n.equality - d(1));
-  // Low trust compounds everything
-  if (n.trust < 25) { n.geopolitics = clamp(n.geopolitics - d(1)); n.wellbeing = clamp(n.wellbeing - d(1)); }
+  // Innovation decays every round — AI progress demands constant investment
+  if (r > 0) n.innovation = clamp(n.innovation - d(3));
+  // Wellbeing decays too — people's needs don't pause
+  if (r > 0) n.wellbeing = clamp(n.wellbeing - d(1));
+  // Low equality drags trust (raised threshold)
+  if (n.equality < 45) n.trust = clamp(n.trust - d(3));
+  // High growth + low equality → inequality accelerates (raised thresholds)
+  if (n.growth > 55 && n.equality < 50) n.equality = clamp(n.equality - d(3));
+  // Low safety compounds risk to trust (raised threshold)
+  if (n.safety_score < 45) n.trust = clamp(n.trust - d(2));
+  // Low innovation drags growth (raised threshold)
+  if (n.innovation < 45) n.growth = clamp(n.growth - d(2));
+  // Low wellbeing erodes equality (raised threshold)
+  if (n.wellbeing < 40) n.equality = clamp(n.equality - d(2));
+  // Low trust compounds everything (raised threshold)
+  if (n.trust < 35) { n.geopolitics = clamp(n.geopolitics - d(2)); n.wellbeing = clamp(n.wellbeing - d(1)); }
+  // Geopolitics erodes without attention
+  if (r > 2 && n.geopolitics < 45) n.trust = clamp(n.trust - d(1));
   return n;
 }
 function getGrade(m) {
@@ -1327,7 +1331,7 @@ export default function Phase4() {
     setResult({...res,synB,t2B,qB,tm,choiceLabel:choice.label,isChain:!!currentEvent.chainStep,isGood:res.good});
     setHistory(p => [...p, {year,eventTitle:currentEvent.title,category:currentEvent.category,choiceLabel:choice.label,narrative:res.narrative,synergies:activeSynergies.map(s=>s.label),microText:microResult?.msg,microLabel:microResult?.label,isChain:!!currentEvent.chainStep,isGood:res.good,factionMsgs:factionMsg}]);
     const avg = Object.values(final).reduce((a,b)=>a+b,0)/Object.values(final).length;
-    setBonusPoints(avg>=70?2:avg>=55?1:0);
+    setBonusPoints(avg>=75?1:0);
     setPhase("summary");
     // Sounds
     playSound("resolve");
@@ -1335,7 +1339,7 @@ export default function Phase4() {
     if (freshUnlocks && freshUnlocks.length > 0) setTimeout(() => playSound("unlock"), 500);
     if (activeSynergies.length > 0) setTimeout(() => playSound("synergy"), 200);
     // Auto-save
-    saveGame({round,metrics:final,cumulative,factionSat:nfs||factionSat,questProgress:questProgress,history:[...history,{year,eventTitle:currentEvent.title,category:currentEvent.category,choiceLabel:choice.label,narrative:res.narrative,synergies:activeSynergies.map(s=>s.label),microText:microResult?.msg,microLabel:microResult?.label,isChain:!!currentEvent.chainStep,isGood:res.good,factionMsgs:factionMsg}],metricHistory:[...metricHistory,{...final}],difficulty,bonusPoints:avg>=70?2:avg>=55?1:0,pendingChains,usedEvents});
+    saveGame({round,metrics:final,cumulative,factionSat:nfs||factionSat,questProgress:questProgress,history:[...history,{year,eventTitle:currentEvent.title,category:currentEvent.category,choiceLabel:choice.label,narrative:res.narrative,synergies:activeSynergies.map(s=>s.label),microText:microResult?.msg,microLabel:microResult?.label,isChain:!!currentEvent.chainStep,isGood:res.good,factionMsgs:factionMsg}],metricHistory:[...metricHistory,{...final}],difficulty,bonusPoints:avg>=75?1:0,pendingChains,usedEvents});
   };
 
   const nextRound = (opts={}) => {
