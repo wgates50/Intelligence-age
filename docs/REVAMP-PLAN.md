@@ -477,13 +477,69 @@ Phases 0–2 alone fix the "played it once" problem. Phases 3–5 are what make 
 
 ---
 
-## 13. Open decisions
+## 13. Decisions
 
-These materially change the design and are flagged for the owner:
+Settled with the owner:
 
-1. **Session length.** Currently ~10 min. Democracy runs 45–90 min. A 110-node sim with elections lands naturally at 30–45 min. Do we target the longer session, or engineer a tight 15-minute "briefing" mode on top of the same engine?
-2. **Can the player lose office?** This is the largest tonal fork. It transforms an educational artefact into a strategy game. Recommended, but it changes what the thing *is*.
-3. **Audience.** Is this primarily a shareable, credible policy explainer (the glossary, citations, and one-pager suggest yes) or a game-first product? It can be both, but they pull on difficulty, length, and framing in opposite directions.
-4. **Visual direction.** Keep the editorial/newsprint identity and add the node web inside it, or rebuild toward a denser dashboard?
-5. **Content volume.** This wants ~45 policies, ~20 blocs, and 100+ dilemmas. Ship a smaller vertical slice first, or author the full library up front?
-6. **Timeline and process.** Six phases is substantial. One long-running branch, or phase-by-phase PRs against `main`?
+1. **Session length — both.** One engine, two configurations: a full 12-year / 3-term campaign (~30–45 min) and a short "briefing" scenario for quick and shareable play. Implemented as `CAMPAIGN` and `BRIEFING` in `RunConfig`.
+2. **The player can lose office.** Elections can end the run. This is the load-bearing decision — it creates the tension between correct AI policy and survivable AI policy, which is the question the subject matter actually poses.
+3. **Game-first, credible underneath.** Design for depth and replay; keep the glossary, citations, and one-pager export so it still reads as serious work. Implies a real difficulty curve and a proper tutorial.
+4. **Start with an engine spike** rather than the refactor or the UI — prove the emergence is real before committing to the rebuild.
+
+Still open:
+
+- **Visual direction.** Keep the editorial/newsprint identity with the node web inside it (assumed), or rebuild toward a denser dashboard?
+- **Content volume.** Full target is ~45 policies, ~20 blocs, 100+ dilemmas. The spike ships 20 / 12 / 0.
+- **Process.** One long-running branch, or phase-by-phase PRs against `main`?
+
+---
+
+## 14. Spike results
+
+Phase 1's engine is built and running headless in `lib/sim`, with world content in `lib/data`, tests in `test/sim`, and a balance harness in `test/balance`. Zero dependencies — Node 22 strips the TypeScript, so `npm run sim:balance` runs 4,800 games in about four seconds.
+
+**Scale:** 20 policies · 25 simulation nodes · 12 voter blocs · ~180 edges · 4 scenarios.
+
+**What works.** Effects are emergent rather than authored, and the causal trace can reconstruct why. A real chain from an actual run:
+
+```
+policy.datacentre_buildout → sim.grid_capacity   (-34, 1-turn delay)
+sim.grid_capacity          → sim.energy_price    (inverse, +46)
+sim.energy_price           → sim.cost_of_living  (+34)
+sim.cost_of_living         → group.retirees      (exponential, -44)
+                           → turnout ↑, support ↓, opposition adopts their cause
+                           → defeated, 2032
+```
+
+Nobody wrote that sentence. It is nine data rows interacting.
+
+Bloc membership moves as designed: a run that lets automation rip grows Displaced Workers from 8% to 30%+ and shrinks Union Members, so the electorate the player faces in term three is not the one they inherited.
+
+**What the harness caught** — three defects that reading the code did not, documented in `lib/sim/README.md`:
+
+1. Centring non-policy edges on a blanket midpoint told every node whose base sits below 50 that its inputs were unusually weak. `automation_rate` fell from 30 to 9 across a campaign — an AI-transition game where automation *decreases*. Fixed by centring on each source's own base.
+2. Scenario-inherited taxes made every bloc start angry, because taxes carry only negative happiness edges. Every archetype lost its first election. Fixed by calibrating each bloc's baseline against the inherited settlement — also the truer model, since voters react to changes from the status quo rather than its level.
+3. A government holding every bloc at exactly neutral still polled 46% and lost. Fixed with an explicit incumbency advantage.
+
+**Current balance**, 4,800 runs across four scenarios:
+
+| strategy | survives | stewardship |
+|---|---|---|
+| technocrat | 91% | 49.7 |
+| spread-thin | 75% | 43.2 |
+| *random control* | *49%* | *43.4* |
+| populist | 48% | 42.1 |
+| safety-first | 36% | **50.1** |
+| social-democrat | 33% | 41.9 |
+| laissez-faire | 22% | 40.8 |
+| accelerate | 5% | 41.2 |
+
+Outcomes: 55% defeated · 30% reached the term limit · 14% reached the Threshold · mean run 8.5 turns.
+
+The important row is `safety-first`: **best stewardship, fifth-best survival.** `populist` is the mirror image. That gap is the game.
+
+Critically, `spread-thin` — the old build's dominant play — is now clearly beaten by a strategy with actual priorities, and every archetype produces a distinguishable world.
+
+**Not yet done.** Balance is a first pass, not a finished one. `technocrat` is dominant and needs a real weakness; `accelerate` may be unwinnable rather than merely demanding; the extremism and unrest path never triggers, so `deposed` is dead content. All are logged in `lib/sim/README.md` for the next tuning pass.
+
+**Next.** Phase 2's remaining piece is the dilemma engine on top of this state (System F), then the node-web UI, then porting the existing writing into state-triggered dilemmas.
