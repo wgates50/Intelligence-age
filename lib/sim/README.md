@@ -197,3 +197,21 @@ Honest list, for the next tuning pass:
 - **Threshold fires in 13% of runs.** Reasonable as the exceptional ending, but
   confirm that is a decision rather than an accident of tuning.
 - `wage_share` and `media_sentiment` have narrow ranges and may be under-powered.
+
+## Playing it
+
+The engine is headless, but there is a playable front end at `/play`. The
+original game is untouched and still lives at `/`.
+
+```bash
+npm run dev            # then open http://localhost:3000/play
+npm run test:ui        # browser smoke test (needs a server already running)
+```
+
+The governing screen puts everything needed for one decision on one page:
+policies with their political-capital and fiscal price, the country in the
+middle, blocs on the right, dilemmas below. **Every simulation node is
+clickable**, and clicking one shows its ranked inbound contributions read
+straight from the engine's causal trace — so the explanation can never drift
+out of sync with the model. If a number moved, the reason shown is the reason
+it moved.
