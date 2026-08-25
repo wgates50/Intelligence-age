@@ -88,6 +88,19 @@ const STRATEGIES: readonly Strategy[] = [
     name: "spread-thin", blurb: "A little of everything — the old game's dominant play",
     plan: Object.fromEntries([...POLICY_MAP.keys()].map((id) => [id, 35])),
   },
+  {
+    name: "scapegoat", blurb: "Buy off the majority, abandon rural entirely",
+    // Deliberately included to exercise the `deposed` ending. Every other
+    // archetype governs generally well or generally badly, and neither route
+    // radicalises a *specific* bloc hard enough to lose the country to the
+    // street. Without a strategy that does, that ending goes untested and can
+    // rot back into dead content without anyone noticing.
+    plan: {
+      datacentre_buildout: 100, grid_investment: 0,
+      portable_benefits: 70, retraining: 60, sovereign_wealth_fund: 60,
+      income_tax: 45, corporate_tax: 30,
+    },
+  },
 ];
 
 /** Walks toward the plan, cheapest affordable moves first. */

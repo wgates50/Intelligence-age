@@ -254,8 +254,8 @@ export const EDGES: readonly Edge[] = [
   { from: "sim.social_cohesion", to: "group.retirees.happiness", fn: "linear", weight: 18 },
 
   // Students & Young.
-  { from: "policy.public_ai_access", to: "group.students.happiness", fn: "linear", weight: 32, delay: 1 },
-  { from: "policy.ai_literacy", to: "group.students.happiness", fn: "linear", weight: 20, delay: 1 },
+  { from: "policy.public_ai_access", to: "group.students.happiness", fn: "linear", weight: 24, delay: 1 },
+  { from: "policy.ai_literacy", to: "group.students.happiness", fn: "linear", weight: 13, delay: 1 },
   { from: "sim.unemployment", to: "group.students.happiness", fn: "linear", weight: -30 },
   { from: "sim.inequality", to: "group.students.happiness", fn: "linear", weight: -24 },
   { from: "sim.open_weights", to: "group.students.happiness", fn: "linear", weight: 16 },
@@ -282,7 +282,7 @@ export const EDGES: readonly Edge[] = [
   // Parents — the bloc most moved by media sentiment.
   { from: "sim.incident_rate", to: "group.parents.happiness", fn: "exponential", weight: -38 },
   { from: "sim.media_sentiment", to: "group.parents.happiness", fn: "linear", weight: 24 },
-  { from: "policy.ai_literacy", to: "group.parents.happiness", fn: "linear", weight: 20, delay: 1 },
+  { from: "policy.ai_literacy", to: "group.parents.happiness", fn: "linear", weight: 12, delay: 1 },
   { from: "sim.cost_of_living", to: "group.parents.happiness", fn: "exponential", weight: -28 },
   { from: "sim.social_cohesion", to: "group.parents.happiness", fn: "linear", weight: 22 },
 

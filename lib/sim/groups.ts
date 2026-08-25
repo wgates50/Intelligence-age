@@ -60,9 +60,22 @@ export function stepGroups(
     // ── Extremism ──
     // Ratchets under sustained anger and decays slowly when conditions improve —
     // radicalisation is not symmetric with the grievance that caused it.
-    const anger = Math.max(0, 32 - happiness);
+    // Accumulation is *superlinear* in anger, and that is the whole point.
+    //
+    // A linear rate could not reach the mobilisation threshold before a run
+    // ended: even under deliberately hostile governing, peak extremism across
+    // 300 runs was 22 against a bar of 45, so unrest and the deposed ending were
+    // unreachable content. Radicalisation does not scale with grievance evenly —
+    // mild dissatisfaction produces grumbling indefinitely, while a bloc pushed
+    // to genuine desperation organises fast.
+    //
+    // Squaring the anger term means a bloc at 35 happiness stays merely sullen
+    // for the length of a campaign, while one held at 15 radicalises inside two
+    // terms. Losing the country to the street is now reachable, but only by
+    // abandoning a specific bloc completely rather than governing generally badly.
+    const anger = Math.max(0, 40 - happiness);
     const extremism = clamp(
-      prev.extremism + anger * 0.22 - (happiness > 45 ? 4 : 1),
+      prev.extremism + (anger * anger) / 26 - (happiness > 45 ? 5 : 1),
       0,
       100,
     );
@@ -95,26 +108,54 @@ export function checkUnrest(state: GameState, difficulty: number): UnrestOutcome
   const push: UnrestOutcome["push"] = [];
   let deposedBy: string | null = null;
 
-  let radicalWeight = 0;
+  // Share of the population sitting inside a *fully* radicalised bloc, rather
+  // than an extremism-weighted average across everyone. Averaging let broad mild
+  // discontent substitute for concentrated fury, which is backwards: revolutions
+  // are made by the committed minority, not the mildly annoyed majority.
+  let radicalisedShare = 0;
 
   for (const g of Object.values(state.groups)) {
     const def = GROUP_MAP.get(g.id);
     if (!def) continue;
     const weight = g.membership / 100;
-    radicalWeight += (g.extremism / 100) * weight;
+    if (g.extremism > 60) radicalisedShare += weight;
 
-    if (g.extremism > 55 && g.happiness < 30) {
+    if (g.extremism > 45 && g.happiness < 35) {
       const scale = weight * (g.extremism / 100);
       events.push(`${def.name} mobilise: sustained protest and coordinated industrial action.`);
-      push.push({ target: "social_cohesion", amount: -12 * scale, note: `${def.name} unrest` });
-      push.push({ target: "media_sentiment", amount: -14 * scale, note: `${def.name} unrest` });
-      push.push({ target: "gdp_growth", amount: -8 * scale, note: `${def.name} disruption` });
+      // Scaled hard, because `scale` is a product of two fractions and stays
+      // small even for a fully radicalised large bloc — at the original weights
+      // a nationwide revolt moved social cohesion by well under a point a turn,
+      // and the node it was supposed to break never fell far enough to break.
+      push.push({ target: "social_cohesion", amount: -55 * scale, note: `${def.name} unrest` });
+      push.push({ target: "media_sentiment", amount: -45 * scale, note: `${def.name} unrest` });
+      push.push({ target: "gdp_growth", amount: -30 * scale, note: `${def.name} disruption` });
+      push.push({ target: "public_trust", amount: -35 * scale, note: `${def.name} unrest` });
     }
   }
 
+  // Radicalisation erodes cohesion *directly*, not only through the disruption
+  // its protests cause. Without this the two deposed conditions could not
+  // co-occur: the strategies that radicalise one bloc hardest (abandon rural,
+  // buy off everyone else) were also funding the benefits that prop cohesion
+  // up, so a country with 18% of its people in open revolt still scored as
+  // socially healthy. A society containing an irreconcilable bloc that size is
+  // not cohesive, whatever its welfare spending says.
+  if (radicalisedShare > 0.02) {
+    push.push({
+      target: "social_cohesion",
+      amount: -140 * radicalisedShare,
+      note: `${(radicalisedShare * 100).toFixed(0)}% of the country has stopped accepting the settlement`,
+    });
+  }
+
   // A government can lose the country without losing an election.
+  // Cohesion is deliberately the slowest node in the game (inertia 0.12), so a
+  // twelve-turn campaign cannot drag it far below 40 however badly things go.
+  // The bar is set to where the node actually reaches rather than to a round
+  // number — the difference between a rare ending and a dead one.
   const cohesion = state.sim.social_cohesion ?? 50;
-  if (radicalWeight > 0.34 * (1 / difficulty) && cohesion < 24) {
+  if (radicalisedShare > 0.15 * (1 / difficulty) && cohesion < 45) {
     deposedBy = "Sustained mass unrest and the collapse of social cohesion force the government out.";
   }
 

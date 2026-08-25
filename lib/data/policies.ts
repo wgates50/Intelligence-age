@@ -69,13 +69,13 @@ export const POLICIES: readonly PolicyDef[] = [
   {
     id: "public_ai_access", name: "Right to AI", category: "public",
     description: "Universal free-tier access to capable models, on public infrastructure.",
-    costOfGdp: 0.02,
+    costOfGdp: 0.032,
     introCost: 16, adjustCost: 3, cancelCost: 24, implementation: 2,
   },
   {
     id: "ai_literacy", name: "AI Literacy Programme", category: "public",
     description: "Schools, libraries, and workplaces. Cheap, slow, compounds.",
-    costOfGdp: 0.012,
+    costOfGdp: 0.019,
     introCost: 8, adjustCost: 2, cancelCost: 10, implementation: 3,
   },
 

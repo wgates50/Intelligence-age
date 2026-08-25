@@ -118,39 +118,48 @@ did not:
    lost a coin flip twice, so no run reached a third term. Fixed with an
    explicit incumbency advantage in the support curve.
 
-Current state — 4,800 runs, four scenarios:
+Current state — 5,400 runs, four scenarios:
 
 ```
-strategy          survive  stewardship  outcome mix
-technocrat            91%         49.7  threshold  14%
-spread-thin           75%         43.2  termLimit  30%
-random control        49%         43.4  defeated   55%
-populist              48%         42.1  deposed     0%
+strategy          survive  stewardship
+technocrat            78%         48.9
+spread-thin           67%         43.0
+populist              48%         42.1
+random control        43%         43.3
 safety-first          36%         50.1
-social-democrat       33%         41.9  mean run: 8.5 turns
+social-democrat       33%         41.9
 laissez-faire         22%         40.8
-accelerate             5%         41.2
+scapegoat             12%         41.1
+accelerate             4%         41.1
+
+outcomes: defeated 62% · termLimit 25% · threshold 13% · deposed <1%
+mean run: 8.1 turns
 ```
 
 Note that `safety-first` has the best stewardship score and only the fifth-best
-survival, while `populist` is the reverse. That gap *is* the game: the
-divergence between doing the transition well and staying in office to keep
-doing it.
+survival, while `populist` is the reverse. That gap *is* the game: the divergence
+between doing the transition well and staying in office to keep doing it.
 
 ## Known balance gaps
 
 Honest list, for the next tuning pass:
 
-- **`technocrat` is dominant at 91%.** Needs a real weakness — most likely it
-  should be more exposed to the labour blocs it under-serves.
-- **`accelerate` is close to dead at 5%.** The chain killing it is correct
+- **`accelerate` is close to dead at 4%.** The chain killing it is correct
   (buildout → grid headroom → energy price → rural and pensioner fury, plus an
   incident drumbeat from having no safety regime), but a legitimate archetype
-  should be viable if played with grid investment first. Worth checking whether
-  it is unwinnable or merely demanding.
-- **`deposed` never fires.** Extremism only accumulates below 32 happiness, which
-  the current numbers rarely reach, so the unrest and mass-mobilisation path is
-  effectively dead content.
-- **Threshold fires in only 14% of runs.** Reasonable as the exceptional ending,
-  but worth confirming that is a decision rather than an accident of tuning.
+  should be viable if played with grid investment first. Worth confirming
+  whether it is unwinnable or merely demanding.
+- **`deposed` fires in well under 1% of runs.** It was completely unreachable
+  before this pass — peak extremism across 300 deliberately hostile runs was 22
+  against a threshold of 45 — and now fires roughly twice per 300 runs of the
+  `scapegoat` archetype on the US scenario. Reachable is better than dead, but
+  at this rate most players will never see it. The remaining blocker is that
+  social cohesion is the slowest node in the game by design, so a 12-turn
+  campaign struggles to drag it into the danger zone.
+- **`technocrat` still leads at 78%** (down from 91% after trimming the
+  happiness returns on AI literacy and public access, and raising their costs).
+  Probably acceptable now — it *should* be a strong strategy — but worth
+  watching that it does not simply dominate.
+- **Threshold fires in 13% of runs.** Reasonable as the exceptional ending, but
+  confirm that is a decision rather than an accident of tuning.
 - `wage_share` and `media_sentiment` have narrow ranges and may be under-powered.
