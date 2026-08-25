@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sim:balance": "node --no-warnings test/balance/harness.ts",
+    "sim:trace": "node --no-warnings test/balance/harness.ts --trace us --seed 3 --strategy technocrat",
+    "test:sim": "node --no-warnings --test \"test/sim/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@upstash/redis": "^1.37.0",
