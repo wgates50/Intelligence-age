@@ -257,6 +257,15 @@ export interface GameState {
   world: WorldState;
   politics: PoliticsState;
 
+  /** Dilemmas awaiting the player's answer. */
+  pendingDilemmas: PendingDilemma[];
+  /** Consequences of past choices, waiting to come due. */
+  pendingConsequences: ResolvedConsequence[];
+  /** Dilemma id → turn last raised, for cooldowns and once-per-run. */
+  dilemmaHistory: Record<string, number>;
+  /** Flags set by choices, so later dilemmas can trigger on earlier ones. */
+  flags: Record<string, number>;
+
   /** Per-turn causal attribution, keyed by target ref. */
   trace: TraceEntry[];
   log: LogEntry[];
@@ -285,7 +294,9 @@ export interface TraceEntry {
 
 export interface LogEntry {
   turn: number;
-  kind: "policy" | "incident" | "election" | "world" | "budget" | "unrest" | "outcome";
+  kind:
+    | "policy" | "incident" | "election" | "world" | "budget"
+    | "unrest" | "outcome" | "dilemma" | "consequence";
   text: string;
 }
 
@@ -294,6 +305,7 @@ export interface LogEntry {
 /** A player instruction for the coming turn. */
 export type Action =
   | { kind: "setPolicy"; id: string; intensity: number }
+  | { kind: "resolveDilemma"; dilemmaId: string; optionIndex: number }
   | { kind: "pass" };
 
 // ── Scenario ─────────────────────────────────────────────────────────────────
@@ -315,4 +327,100 @@ export interface ScenarioDef {
   /** Multiplies every policy's cost — a proxy for state capacity and scale. */
   costMultiplier?: number;
   politicalSystem: "presidential" | "parliamentary" | "federal" | "one_party";
+}
+
+// ── Dilemmas ─────────────────────────────────────────────────────────────────
+
+/**
+ * A predicate tree over world state. Dilemmas declare the *conditions* under
+ * which they are relevant rather than sitting in a shuffled deck, so the same
+ * content library produces a different run depending on the world you made.
+ */
+export interface Trigger {
+  all?: Condition[];
+  any?: Condition[];
+  /** Flags set by earlier choices that must be present. */
+  flags?: string[];
+  /** Flags that must be absent. */
+  notFlags?: string[];
+  /** Earliest turn this can fire. */
+  minTurn?: number;
+}
+
+/** A gate on a dilemma option. Locked options are shown *with their reason*. */
+export interface Requirement {
+  /** Human-readable reason shown when locked — teaching, not punishing. */
+  reason: string;
+  condition?: Condition;
+  /** Political capital that must be available. */
+  politicalCapital?: number;
+  flags?: string[];
+}
+
+export interface Effect {
+  /** Target ref, e.g. `sim.public_trust` or `group.rural.happiness`. */
+  target: string;
+  amount: number;
+}
+
+export interface DeferredOutcome {
+  /** Turns from now until this resolves. */
+  turns: number;
+  effects: Effect[];
+  /** What the player is told when it lands. */
+  text: string;
+  /** Only resolves this way if the condition holds at resolution time. */
+  condition?: Condition;
+  /** Used instead when `condition` fails. */
+  elseEffects?: Effect[];
+  elseText?: string;
+}
+
+export interface DilemmaOption {
+  label: string;
+  detail: string;
+  /** Political capital spent to take this line. */
+  cost?: number;
+  requires?: Requirement[];
+  effects?: Effect[];
+  /**
+   * Consequences that land 2–6 turns later. The player never sees these numbers
+   * up front — only an advisor's estimate — so choices are judgement rather
+   * than arithmetic.
+   */
+  deferred?: DeferredOutcome[];
+  /** Advisor forecast shown instead of the real numbers. */
+  forecast?: string;
+  /** Flags set, enabling later dilemmas to trigger on this choice. */
+  sets?: string[];
+}
+
+export interface DilemmaDef {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: string;
+  trigger: Trigger;
+  /** Relative selection weight among eligible dilemmas. */
+  weight?: number;
+  /** Turns before this can fire again. Omit for once-per-run. */
+  cooldown?: number;
+  once?: boolean;
+  options: DilemmaOption[];
+}
+
+/** A dilemma awaiting the player's answer. */
+export interface PendingDilemma {
+  id: string;
+  raisedTurn: number;
+}
+
+export interface ResolvedConsequence {
+  dueTurn: number;
+  dilemmaId: string;
+  effects: Effect[];
+  text: string;
+  condition?: Condition;
+  elseEffects?: Effect[];
+  elseText?: string;
 }

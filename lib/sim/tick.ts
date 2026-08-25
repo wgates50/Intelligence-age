@@ -20,6 +20,9 @@ import {
   applyInertia, clamp, compileGraph, evaluateTarget, recordTrace,
 } from "./graph.ts";
 import type { CompiledGraph, Contribution } from "./graph.ts";
+import {
+  lapseDilemmas, resolveDilemma, resolvePendingConsequences, selectDilemmas,
+} from "./dilemmas.ts";
 import { checkUnrest, initGroups, stepGroups } from "./groups.ts";
 import type { Rng } from "./rng.ts";
 import { makeRng } from "./rng.ts";
@@ -105,6 +108,10 @@ export function createGame(
     sim,
     groups: initGroups(scenario.membership),
     groupBaselines: {},
+    pendingDilemmas: [],
+    pendingConsequences: [],
+    dilemmaHistory: {},
+    flags: {},
     budget: initBudget(scenario),
     world: initWorld(rng),
     politics: {
@@ -172,12 +179,21 @@ export function actionCost(state: GameState, action: Action): number {
 }
 
 /** Applies affordable actions in order, spending political capital. Invalid ones are skipped. */
-export function applyActions(state: GameState, actions: readonly Action[]): GameState {
+export function applyActions(input: GameState, actions: readonly Action[]): GameState {
+  let state = input;
   let pc = state.politics.politicalCapital;
   const policies = { ...state.policies };
   const log: LogEntry[] = [];
 
   for (const a of actions) {
+    if (a.kind === "resolveDilemma") {
+      const r = resolveDilemma({ ...state, policies, politics: { ...state.politics, politicalCapital: pc } },
+        a.dilemmaId, a.optionIndex);
+      state = r.state;
+      pc = state.politics.politicalCapital;
+      log.push(...r.log);
+      continue;
+    }
     if (a.kind !== "setPolicy") continue;
     const def = POLICY_MAP.get(a.id);
     const cur = policies[a.id];
@@ -226,6 +242,17 @@ export function tick(prev: GameState, actions: readonly Action[], rng: Rng): Gam
   const trace: TraceEntry[] = [];
   const log: LogEntry[] = [];
   const difficulty = state.config.difficulty;
+
+  // 0 ── Dilemmas left unanswered lapse, and drifting is never free. Then any
+  // consequences that have come due land *before* the graph runs, so a decision
+  // made three years ago moves this year's world rather than next year's.
+  const lapsed = lapseDilemmas(state);
+  state = lapsed.state;
+  log.push(...lapsed.log);
+
+  const consequences = resolvePendingConsequences(state);
+  state = consequences.state;
+  log.push(...consequences.log);
 
   // 1 ── Policy implementation ramps.
   // Effects follow the *active* value, so enacting a four-year programme in your
@@ -350,13 +377,22 @@ export function tick(prev: GameState, actions: readonly Action[], rng: Rng): Gam
     politics = { ...politics, outcome: { kind: "termLimit", turn } };
   }
 
+  // 10 ── Raise the dilemmas the new world makes relevant. Selected against the
+  // state as it now stands, so what lands on the desk is a consequence of the
+  // turn that just happened rather than a card off the top of a deck.
+  const advanced: GameState = { ...state, turn, year: 2026 + turn, politics };
+  const pendingDilemmas = politics.outcome ? [] : selectDilemmas(advanced, rng);
+
   return {
-    ...state,
-    turn,
-    year: 2026 + turn,
-    politics,
+    ...advanced,
+    pendingDilemmas,
     trace: trace.slice(0, 400),
-    log: [...state.log, ...log],
+    // Every entry produced by this tick is stamped with the turn the tick ended
+    // on. Entries were previously stamped inconsistently — policy changes with
+    // the pre-increment turn, elections with the post-increment one — so a
+    // single tick emitted entries under two different turn numbers and any
+    // consumer filtering by turn showed them twice.
+    log: [...state.log, ...log.map((e) => ({ ...e, turn }))],
   };
 }
 

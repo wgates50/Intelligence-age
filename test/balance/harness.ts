@@ -25,6 +25,8 @@ import { POLICY_MAP } from "../../lib/data/policies.ts";
 import { approvalRating } from "../../lib/sim/election.ts";
 import { makeRng } from "../../lib/sim/rng.ts";
 import type { Rng } from "../../lib/sim/rng.ts";
+import { DILEMMAS, DILEMMA_MAP } from "../../lib/data/dilemmas.ts";
+import { optionAvailability } from "../../lib/sim/dilemmas.ts";
 import { CAMPAIGN, actionCost, createGame, tick } from "../../lib/sim/tick.ts";
 import type { Action, GameState } from "../../lib/sim/types.ts";
 
@@ -34,6 +36,12 @@ interface Strategy {
   name: string;
   blurb: string;
   plan: Record<string, number>;
+  /**
+   * Which option this archetype reaches for, by index, falling back to the first
+   * available. Without a disposition every archetype would let dilemmas lapse,
+   * and the lapse penalty — not the strategy — would drive the comparison.
+   */
+  lean?: number;
 }
 
 /**
@@ -44,10 +52,12 @@ interface Strategy {
 const STRATEGIES: readonly Strategy[] = [
   {
     name: "laissez-faire", blurb: "Inherit the tax base, change nothing",
+    lean: 2,
     plan: {},
   },
   {
     name: "accelerate", blurb: "Max compute, cut capital taxes, no safety regime",
+    lean: 2,
     plan: {
       datacentre_buildout: 90, grid_investment: 55, chip_industrial_policy: 60,
       corporate_tax: 20, capital_gains_tax: 15, income_tax: 45,
@@ -55,6 +65,7 @@ const STRATEGIES: readonly Strategy[] = [
   },
   {
     name: "safety-first", blurb: "Full frontier regime, controls, interpretability",
+    lean: 0,
     plan: {
       frontier_safety_regime: 90, audit_bureau: 80, interpretability_research: 70,
       open_weight_restrictions: 70, compute_levy: 45, international_accord: 60,
@@ -63,6 +74,7 @@ const STRATEGIES: readonly Strategy[] = [
   },
   {
     name: "social-democrat", blurb: "Redistribute hard, protect labour",
+    lean: 0,
     plan: {
       portable_benefits: 80, retraining: 75, sovereign_wealth_fund: 70,
       worker_codetermination: 65, automation_levy: 55,
@@ -71,6 +83,7 @@ const STRATEGIES: readonly Strategy[] = [
   },
   {
     name: "technocrat", blurb: "Institutions and literacy first, then compute",
+    lean: 0,
     plan: {
       audit_bureau: 75, ai_literacy: 70, grid_investment: 65, public_ai_access: 60,
       frontier_safety_regime: 50, retraining: 50, datacentre_buildout: 45,
@@ -79,6 +92,7 @@ const STRATEGIES: readonly Strategy[] = [
   },
   {
     name: "populist", blurb: "Cheap energy and cash, no long-horizon investment",
+    lean: 1,
     plan: {
       sovereign_wealth_fund: 70, portable_benefits: 60, grid_investment: 45,
       income_tax: 35, corporate_tax: 30, automation_levy: 40,
@@ -86,6 +100,7 @@ const STRATEGIES: readonly Strategy[] = [
   },
   {
     name: "spread-thin", blurb: "A little of everything — the old game's dominant play",
+    lean: 1,
     plan: Object.fromEntries([...POLICY_MAP.keys()].map((id) => [id, 35])),
   },
   {
@@ -95,6 +110,7 @@ const STRATEGIES: readonly Strategy[] = [
     // radicalises a *specific* bloc hard enough to lose the country to the
     // street. Without a strategy that does, that ending goes untested and can
     // rot back into dead content without anyone noticing.
+    lean: 2,
     plan: {
       datacentre_buildout: 100, grid_investment: 0,
       portable_benefits: 70, retraining: 60, sovereign_wealth_fund: 60,
@@ -130,6 +146,23 @@ function planActions(state: GameState, plan: Record<string, number>): Action[] {
   return out;
 }
 
+/** Answers pending dilemmas: the archetype's preferred line, else the first it can afford. */
+function dilemmaActions(state: GameState, lean: number): Action[] {
+  const out: Action[] = [];
+  for (const pending of state.pendingDilemmas) {
+    const def = DILEMMA_MAP.get(pending.id);
+    if (!def) continue;
+    const usable = def.options
+      .map((o, i) => ({ i, ok: optionAvailability(state, o).available }))
+      .filter((o) => o.ok)
+      .map((o) => o.i);
+    if (usable.length === 0) continue;
+    const choice = usable.includes(lean) ? lean : usable[0];
+    out.push({ kind: "resolveDilemma", dilemmaId: pending.id, optionIndex: choice });
+  }
+  return out;
+}
+
 function randomPlan(rng: Rng): Record<string, number> {
   const plan: Record<string, number> = {};
   for (const id of POLICY_MAP.keys()) {
@@ -155,6 +188,8 @@ interface RunResult {
   finalSim: Record<string, number>;
   /** Composite "did the transition go well" score, 0–100. */
   stewardship: number;
+  dilemmasSeen: string[];
+  lockedSeen: string[];
 }
 
 function stewardshipScore(s: GameState): number {
@@ -175,8 +210,21 @@ function playOne(scenarioId: string, seed: number, strategy: Strategy, useRandom
   let state = createGame(scenarioId, seed, CAMPAIGN);
   const plan = useRandom ? randomPlan(rng.fork(1)) : strategy.plan;
 
+  const dilemmasSeen: string[] = [];
+  const lockedSeen: string[] = [];
   while (!state.politics.outcome) {
-    state = tick(state, planActions(state, plan), rng);
+    for (const p of state.pendingDilemmas) {
+      dilemmasSeen.push(p.id);
+      const def = DILEMMA_MAP.get(p.id);
+      for (const o of def?.options ?? []) {
+        if (!optionAvailability(state, o).available) lockedSeen.push(`${p.id}:${o.label}`);
+      }
+    }
+    state = tick(
+      state,
+      [...planActions(state, plan), ...dilemmaActions(state, strategy.lean ?? 0)],
+      rng,
+    );
   }
 
   const finalSim: Record<string, number> = {};
@@ -196,6 +244,8 @@ function playOne(scenarioId: string, seed: number, strategy: Strategy, useRandom
     severeIncidents: state.world.incidents.filter((i) => i.severity > 65).length,
     finalSim,
     stewardship: stewardshipScore(state),
+    dilemmasSeen,
+    lockedSeen,
   };
 }
 
@@ -291,6 +341,41 @@ function report(results: RunResult[]): void {
   }
   console.log();
 
+  // ── Dilemma coverage ──
+  // Content that never fires is content nobody will ever read. A state-triggered
+  // library makes that failure silent, so the harness has to look for it.
+  const fireCounts = new Map<string, number>();
+  const lockCounts = new Map<string, number>();
+  for (const r of results) {
+    for (const id of r.dilemmasSeen) fireCounts.set(id, (fireCounts.get(id) ?? 0) + 1);
+    for (const k of r.lockedSeen) lockCounts.set(k, (lockCounts.get(k) ?? 0) + 1);
+  }
+
+  console.log("dilemma fire rate (per run):");
+  for (const d of [...DILEMMAS].sort((a, b) => (fireCounts.get(b.id) ?? 0) - (fireCounts.get(a.id) ?? 0))) {
+    const n = fireCounts.get(d.id) ?? 0;
+    const rate = n / results.length;
+    const flag = n === 0 ? "  ← NEVER FIRES" : rate > 0.9 ? "  ← fires almost every run" : "";
+    console.log(`  ${pad(d.id, 24)} ${num(rate, 5, 2)}${flag}`);
+    if (n === 0) issues.push(`DEAD CONTENT: dilemma "${d.id}" never fired in ${results.length} runs.`);
+  }
+  console.log();
+
+  const neverUnlocked = [...lockCounts.entries()].filter(([k]) => {
+    // An option locked in every run it appeared in is a gate nobody can pass.
+    const dilemmaId = k.slice(0, k.indexOf(":"));
+    return (lockCounts.get(k) ?? 0) >= (fireCounts.get(dilemmaId) ?? 0) && (fireCounts.get(dilemmaId) ?? 0) > 0;
+  });
+  if (neverUnlocked.length > 0) {
+    // Informational, not a failure: a gate that stays shut for the archetypes
+    // that trigger the dilemma is often the design working — the strategies
+    // causing a crisis are usually the ones that skipped the preparation. Worth
+    // a look only when *no* plausible play could ever open it.
+    console.log("options locked in every run they appeared in (informational):");
+    for (const [k, n] of neverUnlocked) console.log(`  ${k}  (${n})`);
+    console.log();
+  }
+
   if (issues.length === 0) console.log("No balance red flags.\n");
   else for (const i of issues) console.log(`  ⚠ ${i}`);
   console.log();
@@ -307,8 +392,26 @@ function traceRun(scenarioId: string, seed: number, strategyName: string): void 
   console.log(`${strategy.blurb}\n`);
 
   while (!state.politics.outcome) {
-    const before = state.turn;
-    state = tick(state, planActions(state, strategy.plan), rng);
+    const logBefore = state.log.length;
+
+    // Show the dilemmas on the desk and the line this archetype takes, including
+    // any option it cannot reach and why — the locked reason is the part that
+    // teaches, so the annotated run has to surface it.
+    for (const p of state.pendingDilemmas) {
+      const def = DILEMMA_MAP.get(p.id);
+      if (!def) continue;
+      console.log(`   ▸ ${def.title} — ${def.subtitle}`);
+      for (const o of def.options) {
+        const av = optionAvailability(state, o);
+        console.log(`       ${av.available ? "·" : "✕"} ${o.label}${av.available ? "" : `  (locked: ${av.lockedReason})`}`);
+      }
+    }
+
+    state = tick(
+      state,
+      [...planActions(state, strategy.plan), ...dilemmaActions(state, strategy.lean ?? 0)],
+      rng,
+    );
 
     console.log(`── ${state.year} (turn ${state.turn}) ${"─".repeat(46)}`);
     console.log(
@@ -316,14 +419,14 @@ function traceRun(scenarioId: string, seed: number, strategyName: string): void 
       `  ·  capability ${state.world.capability.toFixed(0)}  ·  debt ${(state.budget.debtRatio * 100).toFixed(0)}% GDP`,
     );
 
-    for (const l of state.log.filter((e) => e.turn >= before)) {
+    for (const l of state.log.slice(logBefore)) {
       console.log(`   [${l.kind}] ${l.text}`);
     }
 
     // The three largest movements this turn, with their causes — this is the
     // output the node-web UI will render.
     const moves = state.trace
-      .filter((t) => t.turn >= before)
+      .filter((t) => t.turn >= state.turn - 1)
       .sort((a, b) => Math.abs(b.to - b.from) - Math.abs(a.to - a.from))
       .slice(0, 3);
     for (const m of moves) {

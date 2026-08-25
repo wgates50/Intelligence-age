@@ -48,11 +48,12 @@ from office in year six.
 | `election.ts` | Turnout, vote model, reactive opposition, political capital |
 | `budget.ts` | Revenue with Laffer behaviour, spending, debt, credit rating |
 | `world.ts` | Capability clock, frontier labs, rival blocs, risk register |
+| `dilemmas.ts` | State-triggered dilemma selection, gated options, deferred consequences |
 | `rng.ts` | Seeded mulberry32 |
 | `types.ts` | All shared types |
 
 World content lives in `lib/data` (`policies`, `simulation`, `groups`, `edges`,
-`scenarios`). **The engine never names a specific policy, bloc, or node** — new
+`scenarios`, `dilemmas`). **The engine never names a specific policy, bloc, or node** — new
 content is data rows, not code changes.
 
 ## Design rules
@@ -89,6 +90,33 @@ severity distribution down and drains standing pressure faster. That preserves
 both "I got unlucky" and "my prep paid off", which is what makes a run worth
 repeating.
 
+## Dilemmas
+
+The old build shuffled a deck of ~50 events. You saw about a sixth per run, and
+the correct answer to each was fixed, so the deck was memorised long before it
+was exhausted.
+
+Here a dilemma declares the conditions under which it is **relevant**, and the
+engine draws from whatever the world currently makes eligible. An energy revolt
+fires because you made energy expensive and rural voters angry; a biosecurity
+crisis fires because capability outran your evaluation coverage. Same library,
+different run — and events feel earned rather than dealt.
+
+Three further departures:
+
+- **Options are gated, and locked ones are shown with their reason.** You cannot
+  activate containment protocols you never built. The locked option, and the
+  sentence explaining it, is how the player learns what to build next run.
+- **Consequences are deferred**, resolving 2–6 turns later and often branching on
+  the state of the world *at that point* rather than at the time of the choice.
+  The retraining programme you funded three years ago decides how the layoff
+  wave you are living through now lands.
+- **The player never sees the numbers.** Each option carries an advisor's
+  forecast in words — "Treasury: this works if, and only if, diffusion actually
+  lands." Choices are judgement, not arithmetic.
+
+Ignoring a dilemma is itself a choice: it lapses, and costs trust.
+
 ## The balance harness
 
 A graph this size cannot be tuned by hand — an edge three hops from a bloc can
@@ -97,8 +125,14 @@ plays thousands of games under seven strategy archetypes plus a random control,
 then reports survival, stewardship, node distributions, and automatic warnings
 for dominant strategies, dead strategies, and inert or pinned nodes.
 
-It earned its place immediately. Three defects it caught that reading the code
-did not:
+It also reports **dilemma fire rates**, because a state-triggered library fails
+silently: content whose trigger never matches is indistinguishable from content
+that was cut, and nobody notices. On its first run against the new library it
+found four dilemmas that never fired in 3,600 runs and one that fired in every
+single one — every trigger had been authored against a guessed threshold rather
+than the range its node actually occupies.
+
+It earned its place immediately. Defects it caught that reading the code did not:
 
 1. **Centring on a blanket midpoint inverted the premise of the game.** Nodes
    that deliberately start low (diffusion 30, capability 30 — this is a world
@@ -118,22 +152,22 @@ did not:
    lost a coin flip twice, so no run reached a third term. Fixed with an
    explicit incumbency advantage in the support curve.
 
-Current state — 5,400 runs, four scenarios:
+Current state — 3,600 runs, four scenarios:
 
 ```
 strategy          survive  stewardship
-technocrat            78%         48.9
-spread-thin           67%         43.0
-populist              48%         42.1
-random control        43%         43.3
-safety-first          36%         50.1
-social-democrat       33%         41.9
-laissez-faire         22%         40.8
-scapegoat             12%         41.1
-accelerate             4%         41.1
+technocrat            76%         48.1
+spread-thin           60%         41.9
+populist              40%         41.2
+random control        40%         42.9
+safety-first          31%         49.6
+social-democrat       30%         41.6
+laissez-faire         21%         41.5
+scapegoat             15%         40.6
+accelerate             8%         40.6
 
-outcomes: defeated 62% · termLimit 25% · threshold 13% · deposed <1%
-mean run: 8.1 turns
+outcomes: defeated 64% · termLimit 25% · threshold 11% · deposed <1%
+mean run: 8.0 turns · all 14 dilemmas fire · no red flags
 ```
 
 Note that `safety-first` has the best stewardship score and only the fifth-best
