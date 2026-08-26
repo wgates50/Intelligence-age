@@ -349,10 +349,18 @@ export function tick(prev: GameState, actions: readonly Action[], rng: Rng): Gam
   const turn = state.turn + 1;
 
   // 9 ── Termination, in priority order: deposed, defeated, Threshold, term limit.
+  //
+  // The election runs whenever it comes due, *including* on the final turn. It
+  // used to be guarded by `turn < maxTurns`, which silently deleted the last
+  // election of every run: a campaign (12 turns, 4-year terms) held elections
+  // in years 4 and 8 but never year 12, and a briefing (4 turns, 4-year terms)
+  // held none at all — it could only ever end in `termLimit`, so the short mode
+  // had no fail state and no verdict. Both modes now end on the ballot they
+  // spent the whole run building toward.
   if (unrest.deposedBy) {
     politics = { ...politics, outcome: { kind: "deposed", turn, cause: unrest.deposedBy } };
     log.push({ turn, kind: "outcome", text: unrest.deposedBy });
-  } else if (politics.turnsToElection <= 0 && turn < state.config.maxTurns) {
+  } else if (politics.turnsToElection <= 0) {
     const result = runElection(state, rng);
     log.push({
       turn, kind: "election",

@@ -5,9 +5,9 @@ through the AI transition. Runs on plain `node` — Node 22 strips the TypeScrip
 natively, so there is no build step and no test framework to install.
 
 ```bash
-npm run test:sim          # 23 engine + data-integrity tests
+npm run test:sim          # 41 engine, dilemma, and data-integrity tests
 npm run sim:trace         # one annotated run, with causal chains
-npm run sim:balance       # 4,800-run balance sweep across all scenarios
+npm run sim:balance       # 7,200-run balance sweep across all scenarios
 
 npm run sim:balance -- --runs 400 --scenario eu
 npm run sim:trace -- --trace in --seed 12 --strategy safety-first
@@ -152,22 +152,22 @@ It earned its place immediately. Defects it caught that reading the code did not
    lost a coin flip twice, so no run reached a third term. Fixed with an
    explicit incumbency advantage in the support curve.
 
-Current state — 3,600 runs, four scenarios:
+Current state — 7,200 runs, four scenarios, 800 per archetype:
 
 ```
 strategy          survive  stewardship
-technocrat            76%         48.1
-spread-thin           60%         41.9
-populist              40%         41.2
-random control        40%         42.9
-safety-first          31%         49.6
-social-democrat       30%         41.6
-laissez-faire         21%         41.5
-scapegoat             15%         40.6
-accelerate             8%         40.6
+technocrat            75%         48.0
+spread-thin           59%         41.9
+populist              43%         41.1
+random control        43%         43.1
+safety-first          32%         49.7
+social-democrat       31%         41.6
+laissez-faire         23%         41.5
+scapegoat             16%         40.5
+accelerate             9%         40.5
 
-outcomes: defeated 64% · termLimit 25% · threshold 11% · deposed <1%
-mean run: 8.0 turns · all 14 dilemmas fire · no red flags
+outcomes: defeated 63% · termLimit 25% · threshold 11% · deposed <1%
+mean run: 8.1 turns · all 14 dilemmas fire · no red flags
 ```
 
 Note that `safety-first` has the best stewardship score and only the fifth-best
@@ -178,22 +178,49 @@ between doing the transition well and staying in office to keep doing it.
 
 Honest list, for the next tuning pass:
 
-- **`accelerate` is close to dead at 4%.** The chain killing it is correct
-  (buildout → grid headroom → energy price → rural and pensioner fury, plus an
-  incident drumbeat from having no safety regime), but a legitimate archetype
-  should be viable if played with grid investment first. Worth confirming
-  whether it is unwinnable or merely demanding.
-- **`deposed` fires in well under 1% of runs.** It was completely unreachable
-  before this pass — peak extremism across 300 deliberately hostile runs was 22
-  against a threshold of 45 — and now fires roughly twice per 300 runs of the
-  `scapegoat` archetype on the US scenario. Reachable is better than dead, but
-  at this rate most players will never see it. The remaining blocker is that
-  social cohesion is the slowest node in the game by design, so a 12-turn
-  campaign struggles to drag it into the danger zone.
-- **`technocrat` still leads at 78%** (down from 91% after trimming the
-  happiness returns on AI literacy and public access, and raising their costs).
-  Probably acceptable now — it *should* be a strong strategy — but worth
-  watching that it does not simply dominate.
-- **Threshold fires in 13% of runs.** Reasonable as the exceptional ending, but
+- **`accelerate` survives 9% of the time, the weakest archetype in the set.**
+  The chain killing it is correct (buildout → grid headroom → energy price →
+  rural and pensioner fury, plus an incident drumbeat from having no safety
+  regime), but a legitimate archetype should be viable if played with grid
+  investment first. The open question is whether it is unwinnable or merely
+  demanding — the harness plays it as a fixed plan, so it cannot answer that.
+- **`deposed` fired once in 7,200 runs.** It was completely unreachable before
+  this pass — peak extremism across 300 deliberately hostile runs was 22 against
+  a threshold of 45 — so reachable is a real improvement over dead. But at one
+  run in seven thousand it is effectively content nobody will ever see. The
+  blocker is that social cohesion is the slowest node in the game by design
+  (inertia 0.12), so a 12-turn campaign struggles to drag it into the danger
+  zone even when a bloc is fully radicalised.
+- **`technocrat` leads at 75%** (down from 91% after trimming the happiness
+  returns on AI literacy and public access, and raising their costs). Probably
+  acceptable — it *should* be a strong strategy — but it is 16 points clear of
+  the next archetype, which is worth watching.
+- **The random control survives 43%**, tying `populist` and beating five of the
+  eight designed archetypes. Some of that is real (the designed plans commit
+  hard and commitment is punished), but a control group that beats most of your
+  strategies is a signal the systems are not discriminating as sharply as they
+  should.
+- **Threshold fires in 11% of runs.** Reasonable as the exceptional ending, but
   confirm that is a decision rather than an accident of tuning.
+- **Six dilemmas fire in 5% of runs or fewer** (`wealth_divide`, `leak_aftermath`,
+  `displacement_wave`, `allied_accord`, `lab_relocation_threat`, `protest_wave`).
+  Not dead, but close enough that most players will never meet them.
 - `wage_share` and `media_sentiment` have narrow ranges and may be under-powered.
+
+## Playing it
+
+The engine is headless, but there is a playable front end at `/play`. The
+original game is untouched and still lives at `/`.
+
+```bash
+npm run dev            # then open http://localhost:3000/play
+npm run test:ui        # browser smoke test (needs a server already running)
+```
+
+The governing screen puts everything needed for one decision on one page:
+policies with their political-capital and fiscal price, the country in the
+middle, blocs on the right, dilemmas below. **Every simulation node is
+clickable**, and clicking one shows its ranked inbound contributions read
+straight from the engine's causal trace — so the explanation can never drift
+out of sync with the model. If a number moved, the reason shown is the reason
+it moved.

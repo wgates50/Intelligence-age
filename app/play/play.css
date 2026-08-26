@@ -1,0 +1,32 @@
+/*
+ * Route-scoped styles for the simulation.
+ *
+ * These deliberately live in a stylesheet rather than a `<style>` element inside
+ * the component. React 19 treats `<style>` as a hoistable resource and dedupes
+ * it, so rendering one from a client component makes the server HTML and the
+ * client tree disagree and hydration fails — which is exactly what happened
+ * here, and what the browser smoke test caught. A stylesheet import is both the
+ * fix and the right place for this.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600;6..72,700;6..72,800&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap');
+
+@keyframes ia-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes ia-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fu { animation: ia-fade-up .35s ease both; }
+.fi { animation: ia-fade-in .25s ease both; }
+.rowhover:hover { background: #F2F0EB; }
+
+input[type=range] { accent-color: #2563EB; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fu, .fi { animation: none; }
+  * { transition-duration: 0.01ms !important; }
+}
