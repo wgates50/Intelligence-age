@@ -106,6 +106,9 @@ export default function Game() {
   const capitalLeft = state.politics.politicalCapital - capitalSpent;
   const overdrawn = capitalLeft < 0;
   const traceFor = (target: string) => state.trace.find((t) => t.target === target);
+  // Briefing parks the Threshold at a 999 sentinel to switch that ending off.
+  const thresholdInPlay = state.config.thresholdCapability <= 100;
+  const clockMax = thresholdInPlay ? state.config.thresholdCapability : 100;
 
   return (
     <div style={S.page}>
@@ -141,17 +144,25 @@ export default function Game() {
           </div>
         </div>
 
-        {/* ── Capability clock ── */}
+        {/* ── Capability clock ──
+            Briefing disables the Threshold ending by setting its capability to a
+            999 sentinel. That is an engine detail: rendered literally it told the
+            player the Threshold sat at 999 and pinned the bar near zero all run.
+            When it is out of play, the clock is unlabelled and scaled to 100. */}
         <div style={{ ...S.card, padding: "9px 18px", marginBottom: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-            <span style={S.label}>Frontier capability — the Threshold at {state.config.thresholdCapability}</span>
+            <span style={S.label}>
+              {thresholdInPlay
+                ? `Frontier capability — the Threshold at ${state.config.thresholdCapability}`
+                : "Frontier capability"}
+            </span>
             <span style={{ ...S.mono, fontSize: 11, color: T.tm }}>
               rival {state.world.rivalCapability.toFixed(0)}
             </span>
           </div>
           <div style={{ height: 7, background: T.sa, borderRadius: 4, overflow: "hidden", position: "relative" }}>
             <div style={{
-              height: "100%", width: `${(state.world.capability / state.config.thresholdCapability) * 100}%`,
+              height: "100%", width: `${Math.min(100, (state.world.capability / clockMax) * 100)}%`,
               background: "linear-gradient(90deg,#2563EB,#7C3AED,#DC2626)", transition: "width .8s ease",
             }} />
           </div>
@@ -397,6 +408,17 @@ const RANK: Record<string, number> = {
 };
 const rank = (k: string): number => RANK[k] ?? 9;
 
+/**
+ * "One term" / "Two terms" — the ending copy used to hardcode "Three terms",
+ * which a four-year briefing also displayed. Counts terms *served* from the
+ * turn the run ended on: `politics.term` is incremented by the final election
+ * win that immediately precedes `termLimit`, so it reads one term too many.
+ */
+function termWord(term: number): string {
+  const names = ["No term", "One term", "Two terms", "Three terms", "Four terms"];
+  return names[term] ?? `${term} terms`;
+}
+
 // ── Ending ───────────────────────────────────────────────────────────────────
 
 function Ending({ state, onRestart }: { state: GameState; onRestart: () => void }) {
@@ -411,7 +433,9 @@ function Ending({ state, onRestart }: { state: GameState; onRestart: () => void 
     defeated: `You lost the election with ${"voteShare" in o ? o.voteShare.toFixed(1) : "?"}% of the vote. Whatever you were building, someone else finishes it.`,
     deposed: "cause" in o ? o.cause : "",
     threshold: "A system surpassed expert human performance across every domain. What you had built by then is what humanity had to work with.",
-    termLimit: "Three terms, and the Threshold never came on your watch. The institutions you leave behind are the whole of your answer.",
+    termLimit:
+      `${termWord(Math.ceil(o.turn / state.config.turnsPerTerm))}, and the Threshold never came on your watch. ` +
+      "The institutions you leave behind are the whole of your answer.",
   };
 
   const good = SIM_NODES.filter((n) => n.goodHigh).map((n) => state.sim[n.id]);
